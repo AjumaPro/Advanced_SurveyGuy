@@ -80,7 +80,8 @@ router.post('/register', async (req, res) => {
       const userCount = await query('SELECT COUNT(*) FROM users');
       const isFirstUser = parseInt(userCount.rows[0].count) === 0;
       const role = isFirstUser ? 'admin' : 'user';
-      const isApproved = isFirstUser; // First user is auto-approved
+      // Auto-approve in development mode or if it's the first user
+      const isApproved = isFirstUser || process.env.NODE_ENV === 'development';
 
       // Create user
       const result = await query(
@@ -177,8 +178,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Check if user account is approved (unless they're an admin or super admin)
-    if (user.role !== 'admin' && user.role !== 'super_admin' && !user.is_approved) {
+    // Check if user account is approved (unless they're an admin, super admin, or in development mode)
+    if (user.role !== 'admin' && user.role !== 'super_admin' && !user.is_approved && process.env.NODE_ENV !== 'development') {
       return res.status(403).json({ error: 'Account pending approval. Please contact support.' });
     }
 
@@ -410,6 +411,103 @@ router.post('/super-admin/register', async (req, res) => {
   } catch (error) {
     console.error('Error registering super admin:', error);
     res.status(500).json({ error: 'Failed to register super admin' });
+  }
+});
+
+// POST /api/auth/dev/create-admin - Create admin account for development
+router.post('/dev/create-admin', async (req, res) => {
+  try {
+    // Only allow in development mode
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ error: 'This route is only available in development mode' });
+    }
+
+    const { email, password, name } = req.body;
+
+    // Validate input
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address' });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ error: passwordValidation.error });
+    }
+
+    // Check if user already exists
+    const existingUser = await query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'User already exists with this email' });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Start transaction
+    await query('BEGIN');
+
+    try {
+      // Create admin user
+      const result = await query(
+        `INSERT INTO users (email, password_hash, name, role, subscription_plan, subscription_status, is_approved)
+         VALUES ($1, $2, $3, 'admin', 'admin', 'active', true)
+         RETURNING id, email, name, role, subscription_plan, subscription_status, is_approved, created_at`,
+        [email, passwordHash, name]
+      );
+
+      const user = result.rows[0];
+
+      // Create admin subscription
+      await query(
+        `INSERT INTO payment_subscriptions (user_id, plan_id, plan_name, amount, currency, interval, status)
+         VALUES ($1, 'admin', 'Admin Plan', 0.00, 'GHS', 'monthly', 'active')`,
+        [user.id]
+      );
+
+      // Commit transaction
+      await query('COMMIT');
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      res.status(201).json({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          subscription_plan: user.subscription_plan,
+          subscription_status: user.subscription_status,
+          is_approved: user.is_approved
+        },
+        token,
+        message: 'Admin account created successfully for development!'
+      });
+
+    } catch (error) {
+      // Rollback transaction on error
+      await query('ROLLBACK');
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    res.status(500).json({ error: 'Failed to create admin user' });
   }
 });
 

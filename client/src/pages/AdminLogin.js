@@ -37,16 +37,16 @@ const AdminLogin = () => {
       if (result.success) {
         // Wait a moment for the AuthContext to update
         setTimeout(() => {
-          // Check if the logged-in is an admin
-          const currentUser = JSON.parse(localStorage.getItem('') || '{}');
-          if (currentUser.role === 'admin') {
+          // Check if the logged-in user is an admin
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
             toast.success('Welcome, Administrator!');
             navigate('/app/admin');
           } else {
             toast.error('Access denied. Admin privileges required.');
             // Clear the login data since it's not an admin
             localStorage.removeItem('token');
-            localStorage.removeItem('');
+            localStorage.removeItem('user');
           }
         }, 100);
       }
