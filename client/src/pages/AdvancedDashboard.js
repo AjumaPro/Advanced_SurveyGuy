@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -9,19 +9,11 @@ import {
   Users,
   Calendar,
   Clock,
-  Eye,
-  Download,
-  Share,
-  Copy,
   Plus,
-  Search,
-  Filter,
   ArrowUp,
   ArrowDown,
   Target,
   Zap,
-  Shield,
-  Globe,
   Mail,
   CreditCard
 } from 'lucide-react';
@@ -34,12 +26,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area
+  Line
 } from 'recharts';
 
 const AdvancedDashboard = () => {
@@ -48,11 +35,7 @@ const AdvancedDashboard = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('30d');
   const [selectedMetric, setSelectedMetric] = useState('responses');
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [selectedTimeRange]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/analytics/dashboard?range=${selectedTimeRange}`);
@@ -83,7 +66,11 @@ const AdvancedDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTimeRange]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [selectedTimeRange, fetchDashboardData]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -108,7 +95,7 @@ const AdvancedDashboard = () => {
     return <Clock className="h-4 w-4" />;
   };
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
 
   if (loading) {
     return (
@@ -146,7 +133,7 @@ const AdvancedDashboard = () => {
                 <option value="90d">Last 90 days</option>
                 <option value="1y">Last year</option>
               </select>
-              <Link to="/builder" className="btn-primary">
+              <Link to="/app/builder" className="btn-primary">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Survey
               </Link>
@@ -377,7 +364,7 @@ const AdvancedDashboard = () => {
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
             <div className="space-y-3">
-              <Link to="/builder" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <Link to="/app/builder" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <Plus className="h-5 w-5 text-blue-600" />
                 <span className="text-sm font-medium">Create New Survey</span>
               </Link>
@@ -385,7 +372,7 @@ const AdvancedDashboard = () => {
                 <BarChart3 className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium">View Analytics</span>
               </Link>
-              <Link to="/billing" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <Link to="/app/billing" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <CreditCard className="h-5 w-5 text-purple-600" />
                 <span className="text-sm font-medium">Manage Billing</span>
               </Link>

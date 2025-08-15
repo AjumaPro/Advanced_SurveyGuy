@@ -1,7 +1,60 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/connection');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
+
+// GET /api/analytics - Get overall analytics for the authenticated user
+router.get('/', auth, async (req, res) => {
+  try {
+    // Get user's survey statistics
+    const surveyStats = await query(
+      `SELECT 
+        COUNT(*) as total_surveys,
+        COUNT(CASE WHEN status = 'published' THEN 1 END) as published_surveys,
+        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_surveys
+       FROM surveys 
+       WHERE user_id = $1`,
+      [req.user.id]
+    );
+
+    // Get total responses across all surveys
+    const responseStats = await query(
+      `SELECT 
+        COUNT(r.id) as total_responses,
+        COUNT(DISTINCT r.session_id) as unique_respondents,
+        COUNT(DISTINCT r.survey_id) as surveys_with_responses
+       FROM responses r
+       JOIN surveys s ON r.survey_id = s.id
+       WHERE s.user_id = $1`,
+      [req.user.id]
+    );
+
+    // Get recent activity
+    const recentActivity = await query(
+      `SELECT 
+        s.title,
+        s.status,
+        s.updated_at,
+        COUNT(r.id) as response_count
+       FROM surveys s
+       LEFT JOIN responses r ON s.id = r.survey_id
+       WHERE s.user_id = $1
+       GROUP BY s.id, s.title, s.status, s.updated_at
+       ORDER BY s.updated_at DESC
+       LIMIT 5`,
+      [req.user.id]
+    );
+
+    res.json({
+      surveyStats: surveyStats.rows[0],
+      responseStats: responseStats.rows[0],
+      recentActivity: recentActivity.rows
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
 
 // GET /api/analytics/dashboard - Get advanced dashboard data
 router.get('/dashboard', auth, async (req, res) => {
@@ -499,6 +552,106 @@ router.get('/question/:id', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching question analytics:', error);
     res.status(500).json({ error: 'Failed to fetch question analytics' });
+  }
+});
+
+// GET /api/analytics/surveys - Get survey analytics
+router.get('/surveys', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get survey analytics
+    const surveyAnalytics = await query(`
+      SELECT 
+        s.id,
+        s.title,
+        s.status,
+        s.created_at,
+        s.updated_at,
+        COUNT(DISTINCT q.id) as question_count,
+        COUNT(DISTINCT r.id) as response_count,
+        COUNT(DISTINCT r.session_id) as unique_respondents,
+        COALESCE(AVG(s.completion_rate), 0) as completion_rate
+      FROM surveys s
+      LEFT JOIN questions q ON s.id = q.survey_id
+      LEFT JOIN responses r ON s.id = r.survey_id
+      WHERE s.user_id = $1
+      GROUP BY s.id, s.title, s.status, s.created_at, s.updated_at
+      ORDER BY s.updated_at DESC
+    `, [userId]);
+
+    // Get response trends
+    const responseTrends = await query(`
+      SELECT 
+        DATE(r.created_at) as date,
+        COUNT(*) as responses
+      FROM responses r
+      JOIN surveys s ON r.survey_id = s.id
+      WHERE s.user_id = $1
+        AND r.created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(r.created_at)
+      ORDER BY date DESC
+    `, [userId]);
+
+    // Get question analytics
+    const questionAnalytics = await query(`
+      SELECT 
+        q.type,
+        COUNT(*) as count
+      FROM questions q
+      JOIN surveys s ON q.survey_id = s.id
+      WHERE s.user_id = $1
+      GROUP BY q.type
+    `, [userId]);
+
+    res.json({
+      surveys: surveyAnalytics.rows,
+      responseTrends: responseTrends.rows,
+      questionTypes: questionAnalytics.rows
+    });
+  } catch (error) {
+    console.error('Error fetching survey analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch survey analytics' });
+  }
+});
+
+// GET /api/analytics/responses - Get response analytics
+router.get('/responses', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get response analytics
+    const responseAnalytics = await query(`
+      SELECT 
+        COUNT(*) as total_responses,
+        COUNT(DISTINCT r.session_id) as unique_respondents,
+        COUNT(DISTINCT r.survey_id) as surveys_with_responses,
+        0 as avg_response_time
+      FROM responses r
+      JOIN surveys s ON r.survey_id = s.id
+      WHERE s.user_id = $1
+    `, [userId]);
+
+    // Get response trends by day
+    const dailyTrends = await query(`
+      SELECT 
+        DATE(r.created_at) as date,
+        COUNT(*) as responses
+      FROM responses r
+      JOIN surveys s ON r.survey_id = s.id
+      WHERE s.user_id = $1
+        AND r.created_at >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE(r.created_at)
+      ORDER BY date DESC
+    `, [userId]);
+
+    res.json({
+      overview: responseAnalytics.rows[0],
+      dailyTrends: dailyTrends.rows
+    });
+  } catch (error) {
+    console.error('Error fetching response analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch response analytics' });
   }
 });
 

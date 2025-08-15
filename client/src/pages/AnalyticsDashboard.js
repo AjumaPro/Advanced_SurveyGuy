@@ -125,7 +125,7 @@ const AnalyticsDashboard = () => {
               <p className="text-gray-600 mt-1">Comprehensive insights across all your surveys</p>
             </div>
             <div className="flex items-center space-x-3">
-              <Link to="/builder" className="btn-primary">
+              <Link to="/app/builder" className="btn-primary">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Survey
               </Link>
@@ -204,7 +204,7 @@ const AnalyticsDashboard = () => {
                 : "No surveys match your search criteria."
               }
             </p>
-            <Link to="/builder" className="btn-primary">
+            <Link to="/app/builder" className="btn-primary">
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Survey
             </Link>

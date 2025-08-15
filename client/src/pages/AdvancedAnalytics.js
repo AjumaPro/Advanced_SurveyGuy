@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -9,14 +9,11 @@ import {
   PieChart,
   TrendingUp,
   Users,
-  Calendar,
   Clock,
   Eye,
   Download,
-  Filter,
   RefreshCw,
   ArrowLeft,
-  Share2,
   Settings
 } from 'lucide-react';
 import {
@@ -32,7 +29,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
 // Register ChartJS components
 ChartJS.register(
@@ -56,14 +53,7 @@ const AdvancedAnalytics = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const [selectedChart, setSelectedChart] = useState('overview');
 
-  useEffect(() => {
-    if (surveyId) {
-      fetchSurveyData();
-      fetchAnalytics();
-    }
-  }, [surveyId, timeRange]);
-
-  const fetchSurveyData = async () => {
+  const fetchSurveyData = useCallback(async () => {
     try {
       const response = await axios.get(`/api/surveys/${surveyId}`);
       setSurvey(response.data);
@@ -71,9 +61,9 @@ const AdvancedAnalytics = () => {
       console.error('Error fetching survey:', error);
       toast.error('Failed to load survey data');
     }
-  };
+  }, [surveyId]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/analytics/survey/${surveyId}?range=${timeRange}`);
@@ -85,7 +75,14 @@ const AdvancedAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [surveyId, timeRange]);
+
+  useEffect(() => {
+    if (surveyId) {
+      fetchSurveyData();
+      fetchAnalytics();
+    }
+  }, [surveyId, timeRange, fetchSurveyData, fetchAnalytics]);
 
   const createMockAnalytics = () => {
     const days = 30;
@@ -310,7 +307,7 @@ const AdvancedAnalytics = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <Link to="/analytics" className="btn-secondary">
+              <Link to="/app/analytics" className="btn-secondary">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Analytics
               </Link>

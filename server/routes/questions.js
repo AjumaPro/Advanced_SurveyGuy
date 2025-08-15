@@ -1,7 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/connection');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
+
+// GET /api/questions - Get all questions for the authenticated user
+router.get('/', auth, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT q.* FROM questions q
+       JOIN surveys s ON q.survey_id = s.id
+       WHERE s.user_id = $1
+       ORDER BY s.created_at DESC, q.order_index ASC`,
+      [req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    res.status(500).json({ error: 'Failed to fetch questions' });
+  }
+});
 
 // GET /api/questions/survey/:id - Get all questions for a survey
 router.get('/survey/:id', async (req, res) => {

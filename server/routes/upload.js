@@ -4,7 +4,7 @@ const multer = require('multer');
 const { initializeApp } = require('firebase/app');
 const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 const { query } = require('../database/connection');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 
 // Firebase configuration
@@ -34,6 +34,53 @@ const upload = multer({
     } else {
       cb(new Error('Only image files are allowed'), false);
     }
+  }
+});
+
+// GET /api/upload - Get upload status and configuration
+router.get('/', auth, async (req, res) => {
+  try {
+    // Get user's upload statistics
+    const statsResult = await query(
+      `SELECT 
+        COUNT(*) as total_uploads,
+        SUM(size) as total_size,
+        COUNT(CASE WHEN mime_type LIKE 'image/%' THEN 1 END) as image_count,
+        COUNT(CASE WHEN mime_type NOT LIKE 'image/%' THEN 1 END) as other_count
+       FROM images 
+       WHERE user_id = $1`,
+      [req.user.id]
+    );
+
+    // Get recent uploads
+    const recentUploads = await query(
+      `SELECT 
+        id, 
+        filename, 
+        original_name, 
+        mime_type, 
+        size, 
+        url, 
+        created_at
+       FROM images 
+       WHERE user_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 10`,
+      [req.user.id]
+    );
+
+    res.json({
+      stats: statsResult.rows[0],
+      recentUploads: recentUploads.rows,
+      limits: {
+        maxFileSize: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+        maxFiles: 10
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching upload info:', error);
+    res.status(500).json({ error: 'Failed to fetch upload information' });
   }
 });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/axios';
+import { useAuth } from '../contexts/AuthContext';
 import {
   BarChart3,
   Users,
@@ -10,12 +11,16 @@ import {
   Eye,
   Edit,
   Activity,
-  Sparkles
+  Sparkles,
+  Crown,
+  CheckCircle
 } from 'lucide-react';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { user, subscriptionPlan, subscriptionStatus } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();
@@ -23,7 +28,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get('/api/analytics/dashboard');
+      const response = await api.get('/analytics/dashboard');
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -32,10 +37,71 @@ const Dashboard = () => {
     }
   };
 
+  const handleNavigation = (path) => {
+    try {
+      navigate(path);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      window.location.href = path;
+    }
+  };
+
+  const getSubscriptionInfo = () => {
+    switch (subscriptionPlan) {
+      case 'free':
+        return {
+          name: 'Free Plan',
+          icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+          color: 'text-green-600',
+          bgColor: 'bg-green-100',
+          features: ['3 surveys', '50 responses per survey', 'Basic analytics'],
+          upgradeMessage: 'Upgrade to unlock unlimited surveys and advanced features!'
+        };
+      case 'basic':
+        return {
+          name: 'Basic Plan',
+          icon: <Sparkles className="h-5 w-5 text-blue-600" />,
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-100',
+          features: ['Unlimited surveys', '1,000 responses per survey', 'Advanced analytics'],
+          upgradeMessage: 'You have access to all Basic features!'
+        };
+      case 'premium':
+        return {
+          name: 'Premium Plan',
+          icon: <Crown className="h-5 w-5 text-purple-600" />,
+          color: 'text-purple-600',
+          bgColor: 'bg-purple-100',
+          features: ['Everything in Basic', '5,000 responses per survey', 'Team collaboration'],
+          upgradeMessage: 'You have access to all Premium features!'
+        };
+      case 'enterprise':
+        return {
+          name: 'Enterprise Plan',
+          icon: <Crown className="h-5 w-5 text-yellow-600" />,
+          color: 'text-yellow-600',
+          bgColor: 'bg-yellow-100',
+          features: ['Unlimited everything', 'Custom integrations', 'Dedicated support'],
+          upgradeMessage: 'You have access to all Enterprise features!'
+        };
+      default:
+        return {
+          name: 'Free Plan',
+          icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+          color: 'text-green-600',
+          bgColor: 'bg-green-100',
+          features: ['3 surveys', '50 responses per survey', 'Basic analytics'],
+          upgradeMessage: 'Upgrade to unlock unlimited surveys and advanced features!'
+        };
+    }
+  };
+
+  const subscriptionInfo = getSubscriptionInfo();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="spinner w-8 h-8"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -80,20 +146,53 @@ const Dashboard = () => {
           <p className="text-gray-600">Welcome back! Here's an overview of your surveys.</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Link
-            to="/templates"
-            className="btn-secondary"
+          <button
+            onClick={() => handleNavigation('/app/templates')}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <Sparkles className="h-4 w-4 mr-2" />
             Use Templates
-          </Link>
-          <Link
-            to="/builder"
-            className="btn-primary"
+          </button>
+          <button
+            onClick={() => handleNavigation('/app/builder')}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Survey
-          </Link>
+          </button>
+        </div>
+      </div>
+
+      {/* Subscription Status */}
+      <div className={`${subscriptionInfo.bgColor} rounded-lg p-4 border border-gray-200`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className={`${subscriptionInfo.bgColor} p-2 rounded-lg`}>
+              {subscriptionInfo.icon}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{subscriptionInfo.name}</h3>
+              <p className="text-sm text-gray-600">
+                Status: <span className="capitalize font-medium">{subscriptionStatus}</span>
+              </p>
+              <div className="flex items-center space-x-4 mt-1">
+                {subscriptionInfo.features.map((feature, index) => (
+                  <span key={index} className="text-xs text-gray-500">• {feature}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-600">{subscriptionInfo.upgradeMessage}</p>
+            {subscriptionPlan === 'free' && (
+              <button
+                onClick={() => handleNavigation('/app/billing')}
+                className="mt-2 inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Upgrade Plan
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -102,7 +201,7 @@ const Dashboard = () => {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.name} className="card p-6">
+            <div key={stat.name} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className={`flex-shrink-0 ${stat.bgColor} p-3 rounded-lg`}>
                   <Icon className={`h-6 w-6 ${stat.color}`} />
@@ -119,8 +218,7 @@ const Dashboard = () => {
 
       {/* Templates Section for First-time Users */}
       {(dashboardData?.summary?.total_surveys || 0) === 0 && (
-        <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <div className="card-body">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
             <div className="flex items-center mb-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -162,21 +260,20 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Link
-                to="/templates"
-                className="btn-primary"
+            <button
+              onClick={() => handleNavigation('/app/templates')}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Browse Templates
-              </Link>
-              <Link
-                to="/builder"
-                className="btn-secondary"
+            </button>
+            <button
+              onClick={() => handleNavigation('/app/builder')}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Custom Survey
-              </Link>
-            </div>
+            </button>
           </div>
         </div>
       )}
@@ -184,18 +281,18 @@ const Dashboard = () => {
       {/* Recent Activity & Top Surveys */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <div className="card">
-          <div className="card-header">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
           </div>
-          <div className="card-body">
+          <div className="p-6">
             {dashboardData?.recent_activity?.length > 0 ? (
               <div className="space-y-4">
                 {dashboardData.recent_activity.map((activity, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                        <Activity className="h-4 w-4 text-primary-600" />
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Activity className="h-4 w-4 text-blue-600" />
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -207,12 +304,12 @@ const Dashboard = () => {
                       </p>
                     </div>
                     <div className="flex-shrink-0">
-                      <Link
-                        to={`/analytics/${activity.survey_id}`}
-                        className="text-primary-600 hover:text-primary-500 text-sm font-medium"
+                      <button
+                        onClick={() => handleNavigation(`/app/analytics/${activity.survey_id}`)}
+                        className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors"
                       >
                         View
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -224,11 +321,11 @@ const Dashboard = () => {
         </div>
 
         {/* Top Performing Surveys */}
-        <div className="card">
-          <div className="card-header">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">Top Performing Surveys</h3>
           </div>
-          <div className="card-body">
+          <div className="p-6">
             {dashboardData?.top_surveys?.length > 0 ? (
               <div className="space-y-4">
                 {dashboardData.top_surveys.map((survey, index) => (
@@ -249,18 +346,18 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Link
-                        to={`/analytics/${survey.id}`}
-                        className="text-primary-600 hover:text-primary-500 text-sm font-medium"
+                      <button
+                        onClick={() => handleNavigation(`/app/analytics/${survey.id}`)}
+                        className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors"
                       >
                         Analytics
-                      </Link>
-                      <Link
-                        to={`/builder/${survey.id}`}
-                        className="text-gray-600 hover:text-gray-500"
+                      </button>
+                      <button
+                        onClick={() => handleNavigation(`/app/builder/${survey.id}`)}
+                        className="text-gray-600 hover:text-gray-500 transition-colors"
                       >
                         <Edit className="h-4 w-4" />
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -273,44 +370,44 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
-        <div className="card-header">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
         </div>
-        <div className="card-body">
+        <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              to="/builder"
-              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            <button
+              onClick={() => handleNavigation('/app/builder')}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left w-full"
             >
-              <Plus className="h-6 w-6 text-primary-600 mr-3" />
+              <Plus className="h-6 w-6 text-blue-600 mr-3" />
               <div>
                 <p className="font-medium text-gray-900">Create New Survey</p>
                 <p className="text-sm text-gray-500">Start building your survey</p>
               </div>
-            </Link>
+            </button>
             
-            <Link
-              to="/builder"
-              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            <button
+              onClick={() => handleNavigation('/app/templates')}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left w-full"
             >
-              <FileText className="h-6 w-6 text-primary-600 mr-3" />
+              <FileText className="h-6 w-6 text-blue-600 mr-3" />
               <div>
                 <p className="font-medium text-gray-900">Use Template</p>
                 <p className="text-sm text-gray-500">Start with a template</p>
               </div>
-            </Link>
+            </button>
             
-            <Link
-              to="/analytics"
-              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            <button
+              onClick={() => handleNavigation('/app/analytics')}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left w-full"
             >
-              <BarChart3 className="h-6 w-6 text-primary-600 mr-3" />
+              <BarChart3 className="h-6 w-6 text-blue-600 mr-3" />
               <div>
                 <p className="font-medium text-gray-900">View Analytics</p>
                 <p className="text-sm text-gray-500">Check your survey results</p>
               </div>
-            </Link>
+            </button>
           </div>
         </div>
       </div>

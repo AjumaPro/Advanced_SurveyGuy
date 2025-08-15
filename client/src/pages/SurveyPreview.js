@@ -238,7 +238,7 @@ const SurveyPreview = () => {
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Survey not found</h3>
           <p className="text-gray-600 mb-4">The survey you're looking for doesn't exist.</p>
-          <Link to="/surveys" className="btn-primary">
+          <Link to="/app/surveys" className="btn-primary">
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back to Surveys
           </Link>
@@ -261,7 +261,7 @@ const SurveyPreview = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <Link to="/surveys" className="btn-secondary">
+              <Link to="/app/surveys" className="btn-secondary">
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back to Surveys
               </Link>

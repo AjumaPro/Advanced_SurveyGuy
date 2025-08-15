@@ -255,7 +255,7 @@ const SurveyAnalytics = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <Link to="/surveys" className="btn-secondary">
+              <Link to="/app/surveys" className="btn-secondary">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Surveys
               </Link>

@@ -158,6 +158,7 @@ const createTables = async () => {
         plan_id VARCHAR(50) NOT NULL,
         plan_name VARCHAR(100) NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'GHS',
         interval VARCHAR(20) DEFAULT 'monthly',
         status VARCHAR(50) DEFAULT 'active',
         payment_transaction_id VARCHAR(255),
@@ -175,9 +176,28 @@ const createTables = async () => {
         plan_id VARCHAR(50) NOT NULL,
         plan_name VARCHAR(100) NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
-        currency VARCHAR(10) DEFAULT 'NGN',
+        currency VARCHAR(10) DEFAULT 'GHS',
         reference VARCHAR(255) UNIQUE NOT NULL,
         status VARCHAR(50) DEFAULT 'pending',
+        payment_transaction_id VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create pending_payments table for incomplete payments
+    await query(`
+      CREATE TABLE IF NOT EXISTS pending_payments (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        payment_intent_id INTEGER REFERENCES payment_intents(id) ON DELETE CASCADE,
+        plan_id VARCHAR(50) NOT NULL,
+        plan_name VARCHAR(100) NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'GHS',
+        reference VARCHAR(255) UNIQUE NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours'),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -188,6 +208,125 @@ const createTables = async () => {
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR(50) DEFAULT 'free',
       ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'active'
+    `);
+
+    // Add currency field to existing payment_subscriptions table if it doesn't exist
+    await query(`
+      ALTER TABLE payment_subscriptions 
+      ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'GHS'
+    `);
+
+    // Add payment_transaction_id field to existing payment_intents table if it doesn't exist
+    await query(`
+      ALTER TABLE payment_intents 
+      ADD COLUMN IF NOT EXISTS payment_transaction_id VARCHAR(255)
+    `);
+
+    // Add admin-specific fields to users table
+    await query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT true,
+      ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES users(id),
+      ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS admin_notes TEXT
+    `);
+
+    // Create admin_audit_log table for tracking admin actions
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id SERIAL PRIMARY KEY,
+        admin_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        action VARCHAR(100) NOT NULL,
+        target_type VARCHAR(50) NOT NULL,
+        target_id INTEGER,
+        details JSONB DEFAULT '{}',
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create subscription_packages table for admin-managed packages
+    await query(`
+      CREATE TABLE IF NOT EXISTS subscription_packages (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price DECIMAL(10,2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'GHS',
+        interval VARCHAR(20) DEFAULT 'monthly',
+        features JSONB DEFAULT '[]',
+        max_surveys INTEGER DEFAULT 3,
+        max_responses_per_survey INTEGER DEFAULT 50,
+        is_active BOOLEAN DEFAULT true,
+        is_featured BOOLEAN DEFAULT false,
+        sort_order INTEGER DEFAULT 0,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create payment_approvals table for admin payment approval
+    await query(`
+      CREATE TABLE IF NOT EXISTS payment_approvals (
+        id SERIAL PRIMARY KEY,
+        payment_intent_id INTEGER REFERENCES payment_intents(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        amount DECIMAL(10,2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'GHS',
+        status VARCHAR(50) DEFAULT 'pending',
+        admin_id INTEGER REFERENCES users(id),
+        approved_at TIMESTAMP,
+        rejection_reason TEXT,
+        admin_notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create account_approvals table for admin account approval
+    await query(`
+      CREATE TABLE IF NOT EXISTS account_approvals (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(50) DEFAULT 'pending',
+        admin_id INTEGER REFERENCES users(id),
+        approved_at TIMESTAMP,
+        rejection_reason TEXT,
+        admin_notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create admin_management table for super admin to manage admin accounts
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_management (
+        id SERIAL PRIMARY KEY,
+        admin_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        super_admin_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        action VARCHAR(50) NOT NULL,
+        permissions JSONB DEFAULT '[]',
+        department VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'active',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Add super_admin role support to users table
+    await query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS super_admin BOOLEAN DEFAULT false
+    `);
+
+    // Update existing payment_subscriptions records to have GHS currency if currency is NULL
+    await query(`
+      UPDATE payment_subscriptions 
+      SET currency = 'GHS' 
+      WHERE currency IS NULL
     `);
 
     // Create indexes for better performance
@@ -230,6 +369,7 @@ const dropTables = async () => {
     await query('DROP TABLE IF EXISTS subscriptions CASCADE');
     await query('DROP TABLE IF EXISTS payment_subscriptions CASCADE');
     await query('DROP TABLE IF EXISTS payment_intents CASCADE');
+    await query('DROP TABLE IF EXISTS pending_payments CASCADE');
     await query('DROP TABLE IF EXISTS responses CASCADE');
     await query('DROP TABLE IF EXISTS questions CASCADE');
     await query('DROP TABLE IF EXISTS survey_templates CASCADE');

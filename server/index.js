@@ -24,6 +24,15 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Stricter rate limiting for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 auth attempts per 15 minutes
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
@@ -40,7 +49,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', authLimiter, require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/surveys', require('./routes/surveys'));
 app.use('/api/questions', require('./routes/questions'));
 app.use('/api/responses', require('./routes/responses'));
@@ -49,6 +59,7 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/events', require('./routes/events'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

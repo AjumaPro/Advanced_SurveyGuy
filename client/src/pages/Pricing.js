@@ -1,13 +1,75 @@
-import React, { useState } from 'react';
-import { Check, Star, Crown, Zap, Users, BarChart3, Shield, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, Star, Crown, Zap, Users, BarChart3, Shield, Globe, ChevronDown, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [selectedCurrency, setSelectedCurrency] = useState('GHS');
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-  const plans = [
+  // Currency configuration with GH¢ as default (matching billing page)
+  const CURRENCIES = {
+    GHS: {
+      symbol: 'GH¢',
+      name: 'Ghanaian Cedi',
+      flag: '🇬🇭',
+      exchangeRate: 1,
+      decimalPlaces: 2
+    },
+    USD: {
+      symbol: '$',
+      name: 'US Dollar',
+      flag: '🇺🇸',
+      exchangeRate: 0.12, // 1 GHS = 0.12 USD (approximate)
+      decimalPlaces: 2
+    },
+    EUR: {
+      symbol: '€',
+      name: 'Euro',
+      flag: '🇪🇺',
+      exchangeRate: 0.11, // 1 GHS = 0.11 EUR (approximate)
+      decimalPlaces: 2
+    },
+    GBP: {
+      symbol: '£',
+      name: 'British Pound',
+      flag: '🇬🇧',
+      exchangeRate: 0.095, // 1 GHS = 0.095 GBP (approximate)
+      decimalPlaces: 2
+    },
+    NGN: {
+      symbol: '₦',
+      name: 'Nigerian Naira',
+      flag: '🇳🇬',
+      exchangeRate: 150, // 1 GHS = 150 NGN (approximate)
+      decimalPlaces: 2
+    },
+    KES: {
+      symbol: 'KSh',
+      name: 'Kenyan Shilling',
+      flag: '🇰🇪',
+      exchangeRate: 18, // 1 GHS = 18 KES (approximate)
+      decimalPlaces: 2
+    },
+    ZAR: {
+      symbol: 'R',
+      name: 'South African Rand',
+      flag: '🇿🇦',
+      exchangeRate: 2.2, // 1 GHS = 2.2 ZAR (approximate)
+      decimalPlaces: 2
+    }
+  };
+
+  // Base plans with GHS pricing (matching billing page)
+  const basePlans = [
     {
       name: 'Free',
-      price: { monthly: 0, yearly: 0 },
+      monthlyPrice: 0,
+      yearlyPrice: 0,
       description: 'Perfect for getting started',
       features: [
         'Up to 3 surveys',
@@ -29,8 +91,9 @@ const Pricing = () => {
       borderColor: 'border-gray-200'
     },
     {
-      name: 'Pro',
-      price: { monthly: 19, yearly: 190 },
+      name: 'Basic',
+      monthlyPrice: 29.99,
+      yearlyPrice: 299.99, // 10 months price (2 months free)
       description: 'For growing businesses',
       features: [
         'Unlimited surveys',
@@ -51,12 +114,13 @@ const Pricing = () => {
       borderColor: 'border-blue-200'
     },
     {
-      name: 'Business',
-      price: { monthly: 49, yearly: 490 },
+      name: 'Premium',
+      monthlyPrice: 79.99,
+      yearlyPrice: 799.99, // 10 months price (2 months free)
       description: 'For teams and organizations',
       features: [
-        'Everything in Pro',
-        'Unlimited responses',
+        'Everything in Basic',
+        '5,000 responses per survey',
         'Team collaboration',
         'Advanced reporting',
         'API access',
@@ -74,11 +138,12 @@ const Pricing = () => {
     },
     {
       name: 'Enterprise',
-      price: { monthly: 199, yearly: 1990 },
+      monthlyPrice: 99.99,
+      yearlyPrice: 999.99, // 10 months price (2 months free)
       description: 'For large organizations',
       features: [
-        'Everything in Business',
-        'Unlimited everything',
+        'Everything in Premium',
+        'Unlimited responses',
         'Custom development',
         'On-premise deployment',
         'Advanced security',
@@ -96,31 +161,145 @@ const Pricing = () => {
     }
   ];
 
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    const fromRate = CURRENCIES[fromCurrency]?.exchangeRate || 1;
+    const toRate = CURRENCIES[toCurrency]?.exchangeRate || 1;
+    return (amount / fromRate) * toRate;
+  };
+
+  const formatCurrency = (amount, currency = selectedCurrency) => {
+    const currencyInfo = CURRENCIES[currency];
+    if (!currencyInfo) return `${amount}`;
+    
+    const convertedAmount = convertCurrency(amount, 'GHS', currency);
+    return `${currencyInfo.symbol}${convertedAmount.toFixed(currencyInfo.decimalPlaces)}`;
+  };
+
   const getPrice = (plan) => {
-    const price = plan.price[billingCycle];
+    const price = billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
     if (price === 0) return 'Free';
-    return billingCycle === 'yearly' ? `$${price}/year` : `$${price}/month`;
+    const convertedPrice = convertCurrency(price, 'GHS', selectedCurrency);
+    const currencyInfo = CURRENCIES[selectedCurrency];
+    return `${currencyInfo.symbol}${convertedPrice.toFixed(currencyInfo.decimalPlaces)}/${billingCycle === 'yearly' ? 'year' : 'month'}`;
   };
 
   const getSavings = (plan) => {
-    if (plan.price.monthly === 0) return null;
-    const monthlyTotal = plan.price.monthly * 12;
-    const yearlyPrice = plan.price.yearly;
-    const savings = monthlyTotal - yearlyPrice;
-    return savings > 0 ? `Save $${savings}/year` : null;
+    if (plan.monthlyPrice === 0) return null;
+    if (billingCycle === 'yearly') {
+      const monthlyTotal = convertCurrency(plan.monthlyPrice, 'GHS', selectedCurrency) * 12;
+      const yearlyPrice = convertCurrency(plan.yearlyPrice, 'GHS', selectedCurrency);
+      const savings = monthlyTotal - yearlyPrice;
+      const currencyInfo = CURRENCIES[selectedCurrency];
+      return savings > 0 ? `Save ${currencyInfo.symbol}${savings.toFixed(currencyInfo.decimalPlaces)}/year` : null;
+    }
+    return null;
   };
 
+  const handleSelectPlan = (planName) => {
+    if (isAuthenticated) {
+      // Navigate to billing page with plan pre-selected
+      navigate('/app/billing', { 
+        state: { 
+          selectedPlan: planName.toLowerCase(),
+          billingCycle: billingCycle 
+        } 
+      });
+    } else {
+      // Navigate to registration page
+      navigate('/register', { 
+        state: { 
+          selectedPlan: planName.toLowerCase(),
+          billingCycle: billingCycle 
+        } 
+      });
+    }
+  };
+
+  // Auto-detect user location for currency
+  useEffect(() => {
+    const detectUserLocation = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        // Map country codes to currencies
+        const countryCurrencyMap = {
+          'GH': 'GHS',
+          'US': 'USD',
+          'GB': 'GBP',
+          'NG': 'NGN',
+          'KE': 'KES',
+          'ZA': 'ZAR'
+        };
+        
+        const detectedCurrency = countryCurrencyMap[data.country_code];
+        if (detectedCurrency && CURRENCIES[detectedCurrency]) {
+          setSelectedCurrency(detectedCurrency);
+        }
+      } catch (error) {
+        console.log('Could not detect user location, using default currency');
+      }
+    };
+
+    detectUserLocation();
+  }, [CURRENCIES]);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Choose Your Plan
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Start free and scale as you grow
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900">Choose Your Plan</h1>
+          </div>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Start free and scale as you grow. All plans include a 14-day free trial.
           </p>
+          
+          {/* Currency Selector */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="relative">
+              <button
+                onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border hover:bg-gray-50 transition-colors"
+              >
+                <span className="text-lg">{CURRENCIES[selectedCurrency]?.flag}</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {CURRENCIES[selectedCurrency]?.symbol} {selectedCurrency}
+                </span>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </button>
+              
+              {showCurrencyDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                  {Object.entries(CURRENCIES).map(([code, currency]) => (
+                    <button
+                      key={code}
+                      onClick={() => {
+                        setSelectedCurrency(code);
+                        setShowCurrencyDropdown(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                        selectedCurrency === code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                      }`}
+                    >
+                      <span className="text-lg">{currency.flag}</span>
+                      <span className="font-medium">{currency.symbol}</span>
+                      <span className="text-sm text-gray-500">{currency.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center space-x-4 mb-8">
@@ -143,34 +322,37 @@ const Pricing = () => {
               Yearly
             </span>
             {billingCycle === 'yearly' && (
-              <span className="text-sm text-green-600 font-medium">Save up to 20%</span>
+              <span className="text-sm text-green-600 font-medium">Save up to 17%</span>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans.map((plan, index) => {
+          {basePlans.map((plan, index) => {
             const Icon = plan.icon;
             return (
-              <div
+              <motion.div
                 key={plan.name}
-                className={`relative rounded-lg border-2 p-6 ${
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative rounded-2xl border-2 p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300 ${
                   plan.popular 
-                    ? 'border-purple-300 bg-white shadow-lg scale-105' 
-                    : `${plan.borderColor} ${plan.bgColor}`
+                    ? 'border-purple-300 scale-105' 
+                    : `${plan.borderColor}`
                 }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1 rounded-full text-sm font-medium">
                       Most Popular
                     </span>
                   </div>
                 )}
 
                 <div className="text-center mb-6">
-                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg ${plan.bgColor} mb-4`}>
+                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${plan.bgColor} mb-4`}>
                     <Icon className={`h-6 w-6 ${plan.color}`} />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
@@ -210,29 +392,35 @@ const Pricing = () => {
                 </div>
 
                 <button
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                  onClick={() => handleSelectPlan(plan.name)}
+                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
                     plan.popular
-                      ? 'bg-purple-600 text-white hover:bg-purple-700'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
                       : plan.name === 'Free'
                       ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
                   }`}
                 >
                   {plan.name === 'Free' ? 'Get Started' : 'Start Free Trial'}
                 </button>
-              </div>
+              </motion.div>
             );
           })}
         </div>
 
         {/* Additional Services */}
-        <div className="mt-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-16"
+        >
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
             Additional Services
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex items-center mb-4">
                 <Users className="h-8 w-8 text-blue-600 mr-3" />
                 <h3 className="text-lg font-semibold text-gray-900">Custom Development</h3>
@@ -247,12 +435,12 @@ const Pricing = () => {
                 <li>• Custom reporting</li>
               </ul>
               <div className="mt-4">
-                <span className="text-2xl font-bold text-gray-900">From $500</span>
+                <span className="text-2xl font-bold text-gray-900">From {formatCurrency(500)}</span>
                 <span className="text-gray-600">/project</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex items-center mb-4">
                 <BarChart3 className="h-8 w-8 text-green-600 mr-3" />
                 <h3 className="text-lg font-semibold text-gray-900">Data Analysis</h3>
@@ -267,12 +455,12 @@ const Pricing = () => {
                 <li>• Trend analysis</li>
               </ul>
               <div className="mt-4">
-                <span className="text-2xl font-bold text-gray-900">From $200</span>
+                <span className="text-2xl font-bold text-gray-900">From {formatCurrency(200)}</span>
                 <span className="text-gray-600">/report</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex items-center mb-4">
                 <Globe className="h-8 w-8 text-purple-600 mr-3" />
                 <h3 className="text-lg font-semibold text-gray-900">Consulting</h3>
@@ -287,21 +475,26 @@ const Pricing = () => {
                 <li>• Strategy consulting</li>
               </ul>
               <div className="mt-4">
-                <span className="text-2xl font-bold text-gray-900">From $150</span>
+                <span className="text-2xl font-bold text-gray-900">From {formatCurrency(150)}</span>
                 <span className="text-gray-600">/hour</span>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* FAQ Section */}
-        <div className="mt-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mt-16"
+        >
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
             Frequently Asked Questions
           </h2>
           
           <div className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Can I upgrade or downgrade my plan anytime?
               </h3>
@@ -310,7 +503,7 @@ const Pricing = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 What payment methods do you accept?
               </h3>
@@ -319,7 +512,7 @@ const Pricing = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Is there a free trial?
               </h3>
@@ -328,7 +521,7 @@ const Pricing = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Can I cancel anytime?
               </h3>
@@ -337,7 +530,7 @@ const Pricing = () => {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

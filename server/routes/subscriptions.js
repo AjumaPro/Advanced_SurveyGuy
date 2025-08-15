@@ -1,7 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/connection');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
+
+// GET /api/subscriptions - Get all subscriptions for the authenticated user
+router.get('/', auth, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT * FROM payment_subscriptions 
+       WHERE user_id = $1 
+       ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching subscriptions:', error);
+    res.status(500).json({ error: 'Failed to fetch subscriptions' });
+  }
+});
 
 // POST /api/subscriptions - Subscribe to a survey
 router.post('/', async (req, res) => {

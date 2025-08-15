@@ -1,1271 +1,2622 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const { query } = require('../database/connection');
 
-// Comprehensive survey categories and templates
-const surveyCategories = {
-  // 🔹 By Purpose
-  customer_satisfaction: {
-    name: "Customer Satisfaction Surveys",
-    description: "Measure customer satisfaction with products, services, and experiences",
-    subcategories: {
-      csat: {
-        title: "CSAT (Customer Satisfaction Score) Survey",
-        description: "Measure overall customer satisfaction with your service",
-        icon: "😊",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How satisfied are you with our overall service?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Unsatisfied", emoji: "😠" },
-              { value: 2, label: "Unsatisfied", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Satisfied", emoji: "🙂" },
-              { value: 5, label: "Very Satisfied", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How likely are you to recommend us to others?",
-            required: true,
-            options: [
-              { value: 1, label: "1", emoji: "😞" },
-              { value: 2, label: "2", emoji: "😞" },
-              { value: 3, label: "3", emoji: "😞" },
-              { value: 4, label: "4", emoji: "😞" },
-              { value: 5, label: "5", emoji: "😞" },
-              { value: 6, label: "6", emoji: "😞" },
-              { value: 7, label: "7", emoji: "😐" },
-              { value: 8, label: "8", emoji: "😐" },
-              { value: 9, label: "9", emoji: "😊" },
-              { value: 10, label: "10", emoji: "😊" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What could we do to improve your experience?",
-            required: false
-          }
-        ]
+// Advanced Event Templates
+const advancedEventTemplates = [
+  {
+    id: 'tech-conference-2024',
+    name: 'Tech Conference 2024',
+    category: 'conference',
+    description: 'Comprehensive tech conference with multiple tracks, workshops, and networking opportunities',
+    icon: 'Building',
+    template: 'conference',
+    fields: [
+      'name', 'email', 'phone', 'company', 'position', 'dietary', 'attendees',
+      'track_preference', 'workshop_selection', 'networking_goals', 'accommodation',
+      'special_requirements', 'emergency_contact', 'social_media_handles'
+    ],
+    questions: [
+      {
+        type: 'text',
+        question: 'Full Name',
+        required: true,
+        description: 'Your complete name as it should appear on your badge'
       },
-      nps: {
-        title: "NPS (Net Promoter Score) Survey",
-        description: "Measure customer loyalty and likelihood to recommend",
-        icon: "⭐",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How likely are you to recommend our company to a friend or colleague?",
-            required: true,
-            options: [
-              { value: 0, label: "0", emoji: "😠" },
-              { value: 1, label: "1", emoji: "😠" },
-              { value: 2, label: "2", emoji: "😞" },
-              { value: 3, label: "3", emoji: "😞" },
-              { value: 4, label: "4", emoji: "😞" },
-              { value: 5, label: "5", emoji: "😐" },
-              { value: 6, label: "6", emoji: "😐" },
-              { value: 7, label: "7", emoji: "😐" },
-              { value: 8, label: "8", emoji: "😊" },
-              { value: 9, label: "9", emoji: "😊" },
-              { value: 10, label: "10", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What is the primary reason for your score?",
-            required: false
-          }
-        ]
+      {
+        type: 'email',
+        question: 'Email Address',
+        required: true,
+        description: 'Primary email for conference communications'
       },
-      ces: {
-        title: "CES (Customer Effort Score) Survey",
-        description: "Measure how easy it is for customers to interact with your service",
-        icon: "🎯",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How easy was it to resolve your issue with us today?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Difficult", emoji: "😠" },
-              { value: 2, label: "Difficult", emoji: "😞" },
-              { value: 3, label: "Moderate", emoji: "😐" },
-              { value: 4, label: "Easy", emoji: "🙂" },
-              { value: 5, label: "Very Easy", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What made this experience easy or difficult?",
-            required: false,
-            options: [
-              { value: "staff", label: "Helpful Staff" },
-              { value: "process", label: "Simple Process" },
-              { value: "technology", label: "Good Technology" },
-              { value: "communication", label: "Clear Communication" },
-              { value: "wait_time", label: "Long Wait Times" },
-              { value: "complexity", label: "Complex Process" }
-            ]
-          }
-        ]
+      {
+        type: 'text',
+        question: 'Phone Number',
+        required: true,
+        description: 'Contact number for emergency purposes'
+      },
+      {
+        type: 'text',
+        question: 'Company/Organization',
+        required: true,
+        description: 'Your current employer or organization'
+      },
+      {
+        type: 'text',
+        question: 'Job Title/Position',
+        required: true,
+        description: 'Your current role or position'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which conference track interests you most?',
+        required: true,
+        options: [
+          'Artificial Intelligence & Machine Learning',
+          'Cloud Computing & DevOps',
+          'Cybersecurity & Privacy',
+          'Web Development & Frontend',
+          'Mobile App Development',
+          'Data Science & Analytics'
+        ],
+        description: 'Select your primary area of interest'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which workshops would you like to attend?',
+        required: false,
+        options: [
+          'Hands-on AI Workshop',
+          'DevOps Pipeline Setup',
+          'Security Best Practices',
+          'React Advanced Patterns',
+          'Mobile App Testing',
+          'Data Visualization'
+        ],
+        description: 'Select all workshops you\'re interested in'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What are your networking goals?',
+        required: false,
+        options: [
+          'Find job opportunities',
+          'Connect with industry experts',
+          'Learn about new technologies',
+          'Share knowledge and experiences',
+          'Build professional relationships',
+          'Explore potential collaborations'
+        ],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Do you have any dietary restrictions?',
+        required: false,
+        options: [
+          'None',
+          'Vegetarian',
+          'Vegan',
+          'Gluten-Free',
+          'Dairy-Free',
+          'Nut-Free',
+          'Halal',
+          'Kosher',
+          'Other'
+        ],
+        description: 'Help us accommodate your dietary needs'
+      },
+      {
+        type: 'text',
+        question: 'Any special requirements or accessibility needs?',
+        required: false,
+        description: 'Please let us know if you need any accommodations'
       }
+    ],
+    defaultCapacity: 500,
+    defaultPrice: 299.99,
+    features: [
+      'Keynote speakers',
+      'Multiple track sessions',
+      'Hands-on workshops',
+      'Networking sessions',
+      'Exhibition hall',
+      'Lunch & refreshments',
+      'Conference materials',
+      'Certificate of attendance',
+      'Mobile app access',
+      'Virtual session recordings'
+    ],
+    estimatedDuration: '3 days',
+    targetAudience: 'Tech professionals, Developers, IT Managers, Entrepreneurs',
+    advancedFeatures: {
+      trackSelection: [
+        'Artificial Intelligence & Machine Learning',
+        'Cloud Computing & DevOps',
+        'Cybersecurity & Privacy',
+        'Web Development & Frontend',
+        'Mobile App Development',
+        'Data Science & Analytics'
+      ],
+      workshopOptions: [
+        'Hands-on AI Workshop',
+        'DevOps Pipeline Setup',
+        'Security Best Practices',
+        'React Advanced Patterns',
+        'Mobile App Testing',
+        'Data Visualization'
+      ],
+      networkingEvents: [
+        'Welcome Reception',
+        'Speed Networking',
+        'Industry Roundtables',
+        'Mentor Sessions',
+        'Startup Pitch Night'
+      ]
     }
   },
-  market_research: {
-    name: "Market Research Surveys",
-    description: "Gather insights about market trends, preferences, and competition",
-    subcategories: {
-      product_feedback: {
-        title: "Product Feedback Survey",
-        description: "Collect feedback about your products or services",
-        icon: "📦",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate the overall quality of our product?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "⭐" },
-              { value: 2, label: "Fair", emoji: "⭐⭐" },
-              { value: 3, label: "Good", emoji: "⭐⭐⭐" },
-              { value: 4, label: "Very Good", emoji: "⭐⭐⭐⭐" },
-              { value: 5, label: "Excellent", emoji: "⭐⭐⭐⭐⭐" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What features do you use most often?",
-            required: false,
-            options: [
-              { value: "core", label: "Core Features" },
-              { value: "advanced", label: "Advanced Features" },
-              { value: "mobile", label: "Mobile App" },
-              { value: "web", label: "Web Interface" },
-              { value: "api", label: "API Integration" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What features would you like to see added?",
-            required: false
-          }
-        ]
+  {
+    id: 'luxury-wedding-celebration',
+    name: 'Luxury Wedding Celebration',
+    category: 'wedding',
+    description: 'Premium wedding celebration with comprehensive planning and customization options',
+    icon: 'Heart',
+    template: 'wedding',
+    fields: [
+      'name', 'email', 'phone', 'plus_one', 'dietary', 'attendees',
+      'relationship_to_couple', 'dress_code', 'transportation_needed',
+      'accommodation_preference', 'special_dietary', 'allergies',
+      'photography_consent', 'social_media_sharing', 'gift_preference'
+    ],
+    questions: [
+      {
+        type: 'text',
+        question: 'Full Name',
+        required: true,
+        description: 'Your complete name as it should appear on the guest list'
       },
-      brand_awareness: {
-        title: "Brand Awareness Survey",
-        description: "Measure brand recognition and perception",
-        icon: "🏷️",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "How did you first hear about our brand?",
-            required: true,
-            options: [
-              { value: "social_media", label: "Social Media" },
-              { value: "search_engine", label: "Search Engine" },
-              { value: "friend_recommendation", label: "Friend/Family Recommendation" },
-              { value: "advertisement", label: "Advertisement" },
-              { value: "email_marketing", label: "Email Marketing" },
-              { value: "other", label: "Other" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How familiar are you with our brand?",
-            required: true,
-            options: [
-              { value: 1, label: "Never Heard", emoji: "❓" },
-              { value: 2, label: "Slightly Familiar", emoji: "🤔" },
-              { value: 3, label: "Somewhat Familiar", emoji: "😐" },
-              { value: 4, label: "Very Familiar", emoji: "😊" },
-              { value: 5, label: "Extremely Familiar", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What words come to mind when you think of our brand?",
-            required: false
-          }
-        ]
+      {
+        type: 'email',
+        question: 'Email Address',
+        required: true,
+        description: 'Email for wedding updates and communications'
       },
-      competitor_analysis: {
-        title: "Competitor Analysis Survey",
-        description: "Understand how you compare to competitors",
-        icon: "📊",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "Which companies do you consider our main competitors?",
-            required: true,
-            options: [
-              { value: "competitor_a", label: "Competitor A" },
-              { value: "competitor_b", label: "Competitor B" },
-              { value: "competitor_c", label: "Competitor C" },
-              { value: "competitor_d", label: "Competitor D" },
-              { value: "other", label: "Other" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How do we compare to our competitors in terms of quality?",
-            required: true,
-            options: [
-              { value: 1, label: "Much Worse", emoji: "😠" },
-              { value: 2, label: "Worse", emoji: "😞" },
-              { value: 3, label: "About the Same", emoji: "😐" },
-              { value: 4, label: "Better", emoji: "🙂" },
-              { value: 5, label: "Much Better", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What do our competitors do better than us?",
-            required: false
-          }
-        ]
+      {
+        type: 'text',
+        question: 'Phone Number',
+        required: true,
+        description: 'Contact number for wedding day coordination'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Will you be bringing a plus one?',
+        required: true,
+        options: ['Yes', 'No'],
+        description: 'Please indicate if you\'ll have a guest'
+      },
+      {
+        type: 'text',
+        question: 'Plus One Name (if applicable)',
+        required: false,
+        description: 'Full name of your guest'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your relationship to the couple?',
+        required: true,
+        options: [
+          'Family - Bride\'s side',
+          'Family - Groom\'s side',
+          'Friend of Bride',
+          'Friend of Groom',
+          'Friend of Both',
+          'Colleague',
+          'Other'
+        ],
+        description: 'Help us with seating arrangements'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Do you have any dietary restrictions?',
+        required: false,
+        options: [
+          'None',
+          'Vegetarian',
+          'Vegan',
+          'Gluten-Free',
+          'Dairy-Free',
+          'Nut-Free',
+          'Halal',
+          'Kosher',
+          'Other'
+        ],
+        description: 'Help us accommodate your dietary needs'
+      },
+      {
+        type: 'text',
+        question: 'Any food allergies or special dietary requirements?',
+        required: false,
+        description: 'Please specify any allergies or special needs'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Will you need transportation to/from the venue?',
+        required: true,
+        options: ['Yes', 'No'],
+        description: 'Transportation service availability'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Do you consent to being photographed?',
+        required: true,
+        options: ['Yes', 'No'],
+        description: 'Photography consent for wedding photos'
+      },
+      {
+        type: 'text',
+        question: 'Any special requirements or accessibility needs?',
+        required: false,
+        description: 'Please let us know if you need any accommodations'
       }
+    ],
+    defaultCapacity: 200,
+    defaultPrice: 0,
+    features: [
+      'Ceremony & reception',
+      'Premium catering service',
+      'Live entertainment',
+      'Professional photography',
+      'Wedding favors',
+      'Transportation service',
+      'Accommodation packages',
+      'Wedding website access',
+      'RSVP management',
+      'Guest book & memories'
+    ],
+    estimatedDuration: '8 hours',
+    targetAudience: 'Family, Friends, Colleagues, VIP Guests',
+    advancedFeatures: {
+      accommodationOptions: [
+        'Luxury Hotel Package',
+        'Boutique Hotel',
+        'Airbnb Recommendations',
+        'Transportation Included'
+      ],
+      dietaryOptions: [
+        'Vegetarian',
+        'Vegan',
+        'Gluten-Free',
+        'Halal',
+        'Kosher',
+        'Nut-Free',
+        'Custom Requirements'
+      ],
+      entertainmentChoices: [
+        'Live Band',
+        'DJ',
+        'String Quartet',
+        'Jazz Ensemble',
+        'Cultural Performances'
+      ]
     }
   },
-  employee_surveys: {
-    name: "Employee Surveys",
-    description: "Gather feedback from employees about workplace satisfaction and engagement",
-    subcategories: {
-      employee_engagement: {
-        title: "Employee Engagement Survey",
-        description: "Measure employee engagement and satisfaction",
-        icon: "👥",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How satisfied are you with your current role?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Unsatisfied", emoji: "😠" },
-              { value: 2, label: "Unsatisfied", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Satisfied", emoji: "🙂" },
-              { value: 5, label: "Very Satisfied", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How would you rate the work-life balance?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "⭐" },
-              { value: 2, label: "Fair", emoji: "⭐⭐" },
-              { value: 3, label: "Good", emoji: "⭐⭐⭐" },
-              { value: 4, label: "Very Good", emoji: "⭐⭐⭐⭐" },
-              { value: 5, label: "Excellent", emoji: "⭐⭐⭐⭐⭐" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What would you like to see improved?",
-            required: false,
-            options: [
-              { value: "communication", label: "Communication" },
-              { value: "training", label: "Training & Development" },
-              { value: "benefits", label: "Benefits & Compensation" },
-              { value: "culture", label: "Company Culture" },
-              { value: "tools", label: "Tools & Resources" }
-            ]
-          }
-        ]
+  {
+    id: 'leadership-development-program',
+    name: 'Leadership Development Program',
+    category: 'training',
+    description: 'Comprehensive leadership training with assessments and follow-up coaching',
+    icon: 'GraduationCap',
+    template: 'workshop',
+    fields: [
+      'name', 'email', 'phone', 'company', 'position', 'experience_level',
+      'leadership_goals', 'current_challenges', 'team_size', 'industry',
+      'preferred_learning_style', 'coaching_preference', 'assessment_consent'
+    ],
+    questions: [
+      {
+        type: 'text',
+        question: 'Full Name',
+        required: true,
+        description: 'Your complete name for program registration'
       },
-      job_satisfaction: {
-        title: "Job Satisfaction Survey",
-        description: "Assess overall job satisfaction and workplace happiness",
-        icon: "😊",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How satisfied are you with your job overall?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Dissatisfied", emoji: "😠" },
-              { value: 2, label: "Dissatisfied", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Satisfied", emoji: "🙂" },
-              { value: 5, label: "Very Satisfied", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How likely are you to stay with the company for the next 2 years?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Unlikely", emoji: "😠" },
-              { value: 2, label: "Unlikely", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Likely", emoji: "🙂" },
-              { value: 5, label: "Very Likely", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What would make you more satisfied with your job?",
-            required: false
-          }
-        ]
+      {
+        type: 'email',
+        question: 'Email Address',
+        required: true,
+        description: 'Primary email for program communications'
       },
-      exit_interview: {
-        title: "Exit Interview Survey",
-        description: "Gather feedback from departing employees",
-        icon: "🚪",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "What is the primary reason for your departure?",
-            required: true,
-            options: [
-              { value: "career_growth", label: "Career Growth Opportunities" },
-              { value: "compensation", label: "Compensation" },
-              { value: "work_environment", label: "Work Environment" },
-              { value: "management", label: "Management Issues" },
-              { value: "personal", label: "Personal Reasons" },
-              { value: "other", label: "Other" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How would you rate your overall experience at the company?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What could the company have done to retain you?",
-            required: false
-          }
-        ]
+      {
+        type: 'text',
+        question: 'Phone Number',
+        required: true,
+        description: 'Contact number for program coordination'
       },
-      onboarding_feedback: {
-        title: "Onboarding Feedback Survey",
-        description: "Evaluate the effectiveness of the onboarding process",
-        icon: "🎯",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate your onboarding experience?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "Which onboarding activities were most helpful?",
-            required: false,
-            options: [
-              { value: "orientation", label: "Company Orientation" },
-              { value: "training", label: "Job Training" },
-              { value: "mentor", label: "Mentor Assignment" },
-              { value: "documentation", label: "Documentation" },
-              { value: "team_intro", label: "Team Introductions" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What would you change about the onboarding process?",
-            required: false
-          }
-        ]
+      {
+        type: 'text',
+        question: 'Company/Organization',
+        required: true,
+        description: 'Your current employer or organization'
+      },
+      {
+        type: 'text',
+        question: 'Job Title/Position',
+        required: true,
+        description: 'Your current role or position'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your current leadership experience level?',
+        required: true,
+        options: [
+          'New to leadership',
+          '1-2 years experience',
+          '3-5 years experience',
+          '5-10 years experience',
+          '10+ years experience'
+        ],
+        description: 'Help us tailor the program to your experience'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What are your primary leadership goals?',
+        required: false,
+        options: [
+          'Develop team management skills',
+          'Improve communication',
+          'Strategic thinking',
+          'Conflict resolution',
+          'Change management',
+          'Performance coaching',
+          'Building high-performing teams',
+          'Other'
+        ],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'text',
+        question: 'What are your current leadership challenges?',
+        required: false,
+        description: 'Describe specific challenges you\'re facing'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is the size of your team?',
+        required: true,
+        options: [
+          '1-5 people',
+          '6-10 people',
+          '11-25 people',
+          '26-50 people',
+          '50+ people'
+        ],
+        description: 'Team size for context'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your preferred learning style?',
+        required: false,
+        options: [
+          'Interactive workshops',
+          'Case studies',
+          'One-on-one coaching',
+          'Group discussions',
+          'Self-paced learning',
+          'Mixed approach'
+        ],
+        description: 'Help us customize your learning experience'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Do you consent to leadership assessments?',
+        required: true,
+        options: ['Yes', 'No'],
+        description: 'Assessment consent for personalized development'
       }
+    ],
+    defaultCapacity: 25,
+    defaultPrice: 1499.99,
+    features: [
+      'Leadership assessments',
+      'Interactive workshops',
+      'One-on-one coaching',
+      'Team building exercises',
+      'Case study analysis',
+      'Action planning',
+      'Follow-up sessions',
+      'Resource materials',
+      'Certification',
+      'Networking opportunities'
+    ],
+    estimatedDuration: '5 days',
+    targetAudience: 'Managers, Team Leaders, Aspiring Leaders, HR Professionals',
+    advancedFeatures: {
+      assessmentTypes: [
+        'Leadership Style Assessment',
+        'Emotional Intelligence Test',
+        'Team Dynamics Analysis',
+        'Communication Skills Evaluation',
+        'Strategic Thinking Assessment'
+      ],
+      coachingOptions: [
+        'Individual Coaching Sessions',
+        'Group Coaching Circles',
+        'Peer Mentoring',
+        'Executive Coaching',
+        'Follow-up Check-ins'
+      ],
+      learningModules: [
+        'Strategic Leadership',
+        'Team Management',
+        'Communication Excellence',
+        'Change Management',
+        'Conflict Resolution',
+        'Performance Coaching'
+      ]
     }
   },
-  academic_educational: {
-    name: "Academic / Educational Surveys",
-    description: "Surveys for educational institutions and academic research",
-    subcategories: {
-      course_evaluation: {
-        title: "Course Evaluation Survey",
-        description: "Evaluate course effectiveness and instructor performance",
-        icon: "📚",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate the overall quality of this course?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How effective was the instructor in teaching the material?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Ineffective", emoji: "😠" },
-              { value: 2, label: "Ineffective", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Effective", emoji: "🙂" },
-              { value: 5, label: "Very Effective", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What suggestions do you have for improving this course?",
-            required: false
-          }
-        ]
+  {
+    id: 'global-virtual-summit',
+    name: 'Global Virtual Summit',
+    category: 'virtual',
+    description: 'International virtual summit with multi-timezone support and interactive features',
+    icon: 'Globe',
+    template: 'virtual',
+    fields: [
+      'name', 'email', 'phone', 'company', 'position', 'timezone',
+      'language_preference', 'platform_experience', 'technical_requirements',
+      'interaction_preference', 'networking_goals', 'session_preferences'
+    ],
+    questions: [
+      {
+        type: 'text',
+        question: 'Full Name',
+        required: true,
+        description: 'Your complete name for summit registration'
       },
-      student_feedback: {
-        title: "Student Feedback Survey",
-        description: "Gather feedback from students about their educational experience",
-        icon: "🎓",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How satisfied are you with your overall educational experience?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Dissatisfied", emoji: "😠" },
-              { value: 2, label: "Dissatisfied", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Satisfied", emoji: "🙂" },
-              { value: 5, label: "Very Satisfied", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What aspects of your education need improvement?",
-            required: false,
-            options: [
-              { value: "facilities", label: "Facilities" },
-              { value: "curriculum", label: "Curriculum" },
-              { value: "faculty", label: "Faculty" },
-              { value: "support_services", label: "Support Services" },
-              { value: "technology", label: "Technology" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What would make your educational experience better?",
-            required: false
-          }
-        ]
+      {
+        type: 'email',
+        question: 'Email Address',
+        required: true,
+        description: 'Primary email for summit communications'
       },
-      educational_research: {
-        title: "Educational Research Survey",
-        description: "Conduct research on educational methods and outcomes",
-        icon: "🔬",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "What is your primary learning style?",
-            required: true,
-            options: [
-              { value: "visual", label: "Visual Learner" },
-              { value: "auditory", label: "Auditory Learner" },
-              { value: "kinesthetic", label: "Kinesthetic Learner" },
-              { value: "reading", label: "Reading/Writing Learner" },
-              { value: "mixed", label: "Mixed Learning Style" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How effective are online learning platforms for your education?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Ineffective", emoji: "😠" },
-              { value: 2, label: "Ineffective", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Effective", emoji: "🙂" },
-              { value: 5, label: "Very Effective", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What challenges do you face in your educational journey?",
-            required: false
-          }
-        ]
+      {
+        type: 'text',
+        question: 'Phone Number',
+        required: false,
+        description: 'Contact number (optional)'
+      },
+      {
+        type: 'text',
+        question: 'Company/Organization',
+        required: true,
+        description: 'Your current employer or organization'
+      },
+      {
+        type: 'text',
+        question: 'Job Title/Position',
+        required: true,
+        description: 'Your current role or position'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your timezone?',
+        required: true,
+        options: [
+          'EST (Eastern Standard Time)',
+          'PST (Pacific Standard Time)',
+          'GMT (Greenwich Mean Time)',
+          'CET (Central European Time)',
+          'JST (Japan Standard Time)',
+          'AEST (Australian Eastern Time)',
+          'Other'
+        ],
+        description: 'Help us schedule sessions at convenient times'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your preferred language for sessions?',
+        required: true,
+        options: [
+          'English',
+          'Spanish',
+          'French',
+          'German',
+          'Chinese',
+          'Japanese',
+          'Arabic'
+        ],
+        description: 'Language preference for summit content'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your experience with virtual platforms?',
+        required: true,
+        options: [
+          'Beginner',
+          'Intermediate',
+          'Advanced',
+          'Expert'
+        ],
+        description: 'Help us provide appropriate technical support'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What are your networking goals?',
+        required: false,
+        options: [
+          'Connect with global professionals',
+          'Learn about international markets',
+          'Share knowledge across cultures',
+          'Build international partnerships',
+          'Explore career opportunities',
+          'Other'
+        ],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'text',
+        question: 'Any technical requirements or accessibility needs?',
+        required: false,
+        description: 'Please let us know if you need any accommodations'
       }
+    ],
+    defaultCapacity: 1000,
+    defaultPrice: 99.99,
+    features: [
+      'Multi-timezone sessions',
+      'Interactive workshops',
+      'Virtual networking rooms',
+      'Live Q&A sessions',
+      'Resource downloads',
+      'Certificate of participation',
+      'Mobile app access',
+      'Session recordings',
+      'Community platform',
+      'Follow-up webinars'
+    ],
+    estimatedDuration: '2 days',
+    targetAudience: 'Global professionals, Remote workers, International teams',
+    advancedFeatures: {
+      timezoneSupport: [
+        'EST (Eastern Standard Time)',
+        'PST (Pacific Standard Time)',
+        'GMT (Greenwich Mean Time)',
+        'CET (Central European Time)',
+        'JST (Japan Standard Time)',
+        'AEST (Australian Eastern Time)'
+      ],
+      languageOptions: [
+        'English',
+        'Spanish',
+        'French',
+        'German',
+        'Chinese',
+        'Japanese',
+        'Arabic'
+      ],
+      virtualFeatures: [
+        'Breakout Rooms',
+        'Virtual Whiteboards',
+        'Polls & Surveys',
+        'Chat Functions',
+        'Screen Sharing',
+        'Recording Access'
+      ]
     }
   },
-  health_wellness: {
-    name: "Health & Wellness Surveys",
-    description: "Surveys related to healthcare, wellness, and mental health",
-    subcategories: {
-      patient_satisfaction: {
-        title: "Patient Satisfaction Survey",
-        description: "Evaluate patient satisfaction with healthcare services",
-        icon: "🏥",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How satisfied are you with the care you received?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Dissatisfied", emoji: "😠" },
-              { value: 2, label: "Dissatisfied", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Satisfied", emoji: "🙂" },
-              { value: 5, label: "Very Satisfied", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How would you rate the communication with your healthcare provider?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What could we do to improve your healthcare experience?",
-            required: false
-          }
-        ]
+  {
+    id: 'wellness-retreat-2024',
+    name: 'Wellness Retreat 2024',
+    category: 'wellness',
+    description: 'Comprehensive wellness retreat with personalized health programs',
+    icon: 'Heart',
+    template: 'retreat',
+    fields: [
+      'name', 'email', 'phone', 'age', 'fitness_level', 'health_goals',
+      'dietary_restrictions', 'allergies', 'medical_conditions',
+      'preferred_activities', 'accommodation_type', 'wellness_focus'
+    ],
+    questions: [
+      {
+        type: 'text',
+        question: 'Full Name',
+        required: true,
+        description: 'Your complete name for retreat registration'
       },
-      mental_health_screening: {
-        title: "Mental Health Screening Survey",
-        description: "Assess mental health and well-being",
-        icon: "🧠",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate your overall mental well-being?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "How often do you feel stressed or anxious?",
-            required: true,
-            options: [
-              { value: "never", label: "Never" },
-              { value: "rarely", label: "Rarely" },
-              { value: "sometimes", label: "Sometimes" },
-              { value: "often", label: "Often" },
-              { value: "always", label: "Always" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What coping strategies work best for you?",
-            required: false
-          }
-        ]
+      {
+        type: 'email',
+        question: 'Email Address',
+        required: true,
+        description: 'Primary email for retreat communications'
       },
-      lifestyle_habits: {
-        title: "Lifestyle Habits Survey",
-        description: "Assess lifestyle choices and health behaviors",
-        icon: "💪",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "How often do you exercise?",
-            required: true,
-            options: [
-              { value: "never", label: "Never" },
-              { value: "rarely", label: "Rarely (1-2 times/month)" },
-              { value: "sometimes", label: "Sometimes (1-2 times/week)" },
-              { value: "regularly", label: "Regularly (3-4 times/week)" },
-              { value: "daily", label: "Daily" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How would you rate your sleep quality?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😴" },
-              { value: 2, label: "Fair", emoji: "😴" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "😊" },
-              { value: 5, label: "Excellent", emoji: "😴" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What health goals are you working towards?",
-            required: false
-          }
-        ]
+      {
+        type: 'text',
+        question: 'Phone Number',
+        required: true,
+        description: 'Contact number for retreat coordination'
+      },
+      {
+        type: 'number',
+        question: 'Age',
+        required: true,
+        description: 'Your age for program customization'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is your current fitness level?',
+        required: true,
+        options: [
+          'Beginner',
+          'Intermediate',
+          'Advanced',
+          'Mixed Level'
+        ],
+        description: 'Help us customize your wellness program'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What are your primary health goals?',
+        required: false,
+        options: [
+          'Stress reduction',
+          'Weight management',
+          'Fitness improvement',
+          'Mental wellness',
+          'Better sleep',
+          'Nutrition education',
+          'Mindfulness practice',
+          'Other'
+        ],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Do you have any dietary restrictions?',
+        required: false,
+        options: [
+          'None',
+          'Vegetarian',
+          'Vegan',
+          'Gluten-Free',
+          'Dairy-Free',
+          'Nut-Free',
+          'Halal',
+          'Kosher',
+          'Other'
+        ],
+        description: 'Help us accommodate your dietary needs'
+      },
+      {
+        type: 'text',
+        question: 'Any food allergies or medical conditions?',
+        required: false,
+        description: 'Please specify any allergies or conditions'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What wellness activities interest you most?',
+        required: false,
+        options: [
+          'Yoga & meditation',
+          'Fitness classes',
+          'Nutrition workshops',
+          'Spa treatments',
+          'Mindfulness training',
+          'Outdoor activities',
+          'Wellness consultations',
+          'Other'
+        ],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What type of accommodation do you prefer?',
+        required: true,
+        options: [
+          'Private Room',
+          'Shared Room',
+          'Glamping Tent',
+          'Wellness Suite',
+          'Eco-Friendly Cabin'
+        ],
+        description: 'Accommodation preference for your stay'
+      },
+      {
+        type: 'text',
+        question: 'Any special requirements or accessibility needs?',
+        required: false,
+        description: 'Please let us know if you need any accommodations'
       }
-    }
-  },
-  event_feedback: {
-    name: "Event Feedback Surveys",
-    description: "Gather feedback from event attendees and participants",
-    subcategories: {
-      pre_event_expectations: {
-        title: "Pre-Event Expectations Survey",
-        description: "Understand attendee expectations before an event",
-        icon: "📅",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "What are you most looking forward to at this event?",
-            required: true,
-            options: [
-              { value: "networking", label: "Networking Opportunities" },
-              { value: "learning", label: "Learning Sessions" },
-              { value: "speakers", label: "Keynote Speakers" },
-              { value: "exhibits", label: "Exhibits & Demos" },
-              { value: "social", label: "Social Activities" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How excited are you about attending this event?",
-            required: true,
-            options: [
-              { value: 1, label: "Not Excited", emoji: "😐" },
-              { value: 2, label: "Somewhat Excited", emoji: "🙂" },
-              { value: 3, label: "Excited", emoji: "😊" },
-              { value: 4, label: "Very Excited", emoji: "🥰" },
-              { value: 5, label: "Extremely Excited", emoji: "🎉" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What specific topics or sessions interest you most?",
-            required: false
-          }
-        ]
-      },
-      post_event_feedback: {
-        title: "Post-Event Feedback Survey",
-        description: "Evaluate event success and gather attendee feedback",
-        icon: "🎉",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate the overall event experience?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "⭐" },
-              { value: 2, label: "Fair", emoji: "⭐⭐" },
-              { value: 3, label: "Good", emoji: "⭐⭐⭐" },
-              { value: 4, label: "Very Good", emoji: "⭐⭐⭐⭐" },
-              { value: 5, label: "Excellent", emoji: "⭐⭐⭐⭐⭐" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What was your favorite part of the event?",
-            required: false,
-            options: [
-              { value: "keynotes", label: "Keynote Speakers" },
-              { value: "networking", label: "Networking Sessions" },
-              { value: "workshops", label: "Workshops" },
-              { value: "exhibits", label: "Exhibits" },
-              { value: "food", label: "Food & Refreshments" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What would you like to see at future events?",
-            required: false
-          }
-        ]
-      },
-      virtual_hybrid_events: {
-        title: "Virtual/Hybrid Event Survey",
-        description: "Evaluate virtual and hybrid event experiences",
-        icon: "💻",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate the virtual event platform?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What challenges did you face with the virtual format?",
-            required: false,
-            options: [
-              { value: "technical", label: "Technical Issues" },
-              { value: "engagement", label: "Lack of Engagement" },
-              { value: "networking", label: "Difficulty Networking" },
-              { value: "content", label: "Content Quality" },
-              { value: "none", label: "No Challenges" }
-            ]
-          },
-          {
-            type: "text",
-            text: "How can we improve the virtual event experience?",
-            required: false
-          }
-        ]
-      }
-    }
-  },
-  community_public_opinion: {
-    name: "Community / Public Opinion Surveys",
-    description: "Surveys for civic engagement and public opinion research",
-    subcategories: {
-      political_polling: {
-        title: "Political Polling Survey",
-        description: "Gather public opinion on political issues and candidates",
-        icon: "🗳️",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "Which political party do you most closely identify with?",
-            required: true,
-            options: [
-              { value: "democrat", label: "Democratic Party" },
-              { value: "republican", label: "Republican Party" },
-              { value: "independent", label: "Independent" },
-              { value: "other", label: "Other Party" },
-              { value: "prefer_not", label: "Prefer Not to Say" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How satisfied are you with current government performance?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Dissatisfied", emoji: "😠" },
-              { value: 2, label: "Dissatisfied", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Satisfied", emoji: "🙂" },
-              { value: 5, label: "Very Satisfied", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What issues are most important to you in the upcoming election?",
-            required: false
-          }
-        ]
-      },
-      social_issues: {
-        title: "Social Issues Perception Survey",
-        description: "Understand public opinion on social issues",
-        icon: "🌍",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "Which social issue concerns you the most?",
-            required: true,
-            options: [
-              { value: "climate_change", label: "Climate Change" },
-              { value: "healthcare", label: "Healthcare Access" },
-              { value: "education", label: "Education Quality" },
-              { value: "economic_inequality", label: "Economic Inequality" },
-              { value: "social_justice", label: "Social Justice" },
-              { value: "other", label: "Other" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How optimistic are you about solving this issue?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Pessimistic", emoji: "😠" },
-              { value: 2, label: "Pessimistic", emoji: "😞" },
-              { value: 3, label: "Neutral", emoji: "😐" },
-              { value: 4, label: "Optimistic", emoji: "🙂" },
-              { value: 5, label: "Very Optimistic", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What actions do you think would be most effective?",
-            required: false
-          }
-        ]
-      },
-      civic_engagement: {
-        title: "Civic Engagement Survey",
-        description: "Assess community involvement and civic participation",
-        icon: "🏛️",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "How often do you participate in community activities?",
-            required: true,
-            options: [
-              { value: "never", label: "Never" },
-              { value: "rarely", label: "Rarely" },
-              { value: "sometimes", label: "Sometimes" },
-              { value: "often", label: "Often" },
-              { value: "regularly", label: "Regularly" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How important is civic engagement to you?",
-            required: true,
-            options: [
-              { value: 1, label: "Not Important", emoji: "😐" },
-              { value: 2, label: "Somewhat Important", emoji: "🙂" },
-              { value: 3, label: "Important", emoji: "😊" },
-              { value: 4, label: "Very Important", emoji: "🥰" },
-              { value: 5, label: "Extremely Important", emoji: "🎉" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What would encourage you to be more civically engaged?",
-            required: false
-          }
-        ]
-      }
-    }
-  },
-  product_service_feedback: {
-    name: "Product or Service Feedback Surveys",
-    description: "Gather feedback on specific products and services",
-    subcategories: {
-      beta_testing: {
-        title: "Beta Testing Feedback Survey",
-        description: "Collect feedback from beta testers and early adopters",
-        icon: "🧪",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How would you rate the overall user experience?",
-            required: true,
-            options: [
-              { value: 1, label: "Poor", emoji: "😠" },
-              { value: 2, label: "Fair", emoji: "😞" },
-              { value: 3, label: "Good", emoji: "😐" },
-              { value: 4, label: "Very Good", emoji: "🙂" },
-              { value: 5, label: "Excellent", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "What issues did you encounter during testing?",
-            required: false,
-            options: [
-              { value: "bugs", label: "Software Bugs" },
-              { value: "usability", label: "Usability Issues" },
-              { value: "performance", label: "Performance Problems" },
-              { value: "design", label: "Design Issues" },
-              { value: "none", label: "No Issues" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What features would you like to see added or improved?",
-            required: false
-          }
-        ]
-      },
-      feature_prioritization: {
-        title: "Feature Prioritization Survey",
-        description: "Determine which features to develop next",
-        icon: "📋",
-        questions: [
-          {
-            type: "multiple_choice",
-            text: "Which feature would be most valuable to you?",
-            required: true,
-            options: [
-              { value: "feature_a", label: "Feature A" },
-              { value: "feature_b", label: "Feature B" },
-              { value: "feature_c", label: "Feature C" },
-              { value: "feature_d", label: "Feature D" },
-              { value: "feature_e", label: "Feature E" }
-            ]
-          },
-          {
-            type: "emoji_scale",
-            text: "How important is this feature to your workflow?",
-            required: true,
-            options: [
-              { value: 1, label: "Not Important", emoji: "😐" },
-              { value: 2, label: "Somewhat Important", emoji: "🙂" },
-              { value: 3, label: "Important", emoji: "😊" },
-              { value: 4, label: "Very Important", emoji: "🥰" },
-              { value: 5, label: "Critical", emoji: "🎉" }
-            ]
-          },
-          {
-            type: "text",
-            text: "How would this feature improve your experience?",
-            required: false
-          }
-        ]
-      },
-      usability_testing: {
-        title: "Usability Testing Survey",
-        description: "Evaluate the usability and user experience of products",
-        icon: "🔍",
-        questions: [
-          {
-            type: "emoji_scale",
-            text: "How easy was it to complete the main task?",
-            required: true,
-            options: [
-              { value: 1, label: "Very Difficult", emoji: "😠" },
-              { value: 2, label: "Difficult", emoji: "😞" },
-              { value: 3, label: "Moderate", emoji: "😐" },
-              { value: 4, label: "Easy", emoji: "🙂" },
-              { value: 5, label: "Very Easy", emoji: "🥰" }
-            ]
-          },
-          {
-            type: "multiple_choice",
-            text: "Where did you encounter the most difficulty?",
-            required: false,
-            options: [
-              { value: "navigation", label: "Navigation" },
-              { value: "search", label: "Search Function" },
-              { value: "forms", label: "Forms/Input" },
-              { value: "content", label: "Content Understanding" },
-              { value: "none", label: "No Difficulties" }
-            ]
-          },
-          {
-            type: "text",
-            text: "What would make this product easier to use?",
-            required: false
-          }
-        ]
-      }
+    ],
+    defaultCapacity: 50,
+    defaultPrice: 899.99,
+    features: [
+      'Personalized wellness plans',
+      'Yoga & meditation sessions',
+      'Nutrition workshops',
+      'Fitness assessments',
+      'Spa treatments',
+      'Mindfulness training',
+      'Health consultations',
+      'Wellness materials',
+      'Follow-up support',
+      'Community access'
+    ],
+    estimatedDuration: 'Weekend',
+    targetAudience: 'Wellness enthusiasts, Health-conscious individuals, Stress relief seekers',
+    advancedFeatures: {
+      wellnessPrograms: [
+        'Mindfulness & Meditation',
+        'Yoga & Movement',
+        'Nutrition & Healthy Eating',
+        'Stress Management',
+        'Sleep Optimization',
+        'Energy Healing'
+      ],
+      accommodationTypes: [
+        'Private Room',
+        'Shared Room',
+        'Glamping Tent',
+        'Wellness Suite',
+        'Eco-Friendly Cabin'
+      ],
+      activityLevels: [
+        'Beginner',
+        'Intermediate',
+        'Advanced',
+        'Mixed Level',
+        'Custom Program'
+      ]
     }
   }
-};
+];
 
-// Question format categories
-const questionFormats = {
-  multiple_choice: {
-    name: "Multiple Choice",
-    description: "Questions with predefined answer options",
-    icon: "☑️"
+// Advanced Survey Templates
+const advancedSurveyTemplates = [
+  {
+    id: 'comprehensive-employee-engagement',
+    name: 'Comprehensive Employee Engagement Survey',
+    category: 'employee',
+    description: 'In-depth employee engagement survey with culture assessment and organizational health evaluation',
+    icon: 'Users',
+    questions: [
+      {
+        type: 'rating',
+        question: 'How satisfied are you with your current role at the company?',
+        required: true,
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate your overall job satisfaction'
+      },
+      {
+        type: 'rating',
+        question: 'How would you rate the company culture and work environment?',
+        required: true,
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the overall organizational culture'
+      },
+      {
+        type: 'rating',
+        question: 'How likely are you to recommend this company as a great place to work?',
+        required: true,
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Employee Net Promoter Score assessment'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What aspects of the company culture do you value most?',
+        required: false,
+        options: ['Work-life balance', 'Professional development', 'Team collaboration', 'Innovation', 'Diversity & inclusion', 'Compensation & benefits', 'Leadership', 'Company mission'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'text',
+        question: 'What suggestions do you have for improving the company culture?',
+        required: false,
+        description: 'Share your ideas for cultural enhancement'
+      },
+      {
+        type: 'rating',
+        question: 'How effective is communication within your team?',
+        required: true,
+        options: ['Very Ineffective', 'Ineffective', 'Neutral', 'Effective', 'Very Effective'],
+        description: 'Rate team communication effectiveness'
+      },
+      {
+        type: 'rating',
+        question: 'How supported do you feel in your professional growth?',
+        required: true,
+        options: ['Not Supported', 'Somewhat Supported', 'Neutral', 'Well Supported', 'Very Well Supported'],
+        description: 'Rate organizational support for career development'
+      },
+      {
+        type: 'rating',
+        question: 'How would you rate your relationship with your manager?',
+        required: true,
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate your supervisor relationship quality'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What motivates you to come to work each day?',
+        required: false,
+        options: ['Meaningful work', 'Team collaboration', 'Career growth', 'Compensation', 'Company mission', 'Work-life balance', 'Recognition', 'Other'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'rating',
+        question: 'How likely are you to stay with the company for the next 2 years?',
+        required: true,
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Retention likelihood assessment'
+      }
+    ],
+    estimatedTime: '10-12 minutes',
+    responseCount: 0,
+    targetAudience: 'All employees, HR teams, Management, Leadership',
+    useCases: ['Employee engagement measurement', 'Culture assessment', 'Retention analysis', 'Organizational health evaluation'],
+    insights: ['Engagement drivers', 'Retention risk factors', 'Cultural strengths', 'Improvement priorities']
   },
-  rating_scale: {
-    name: "Rating Scale / Likert Scale",
-    description: "Questions using numerical or emoji rating scales",
-    icon: "⭐"
+  {
+    id: 'customer-journey-mapping',
+    name: 'Customer Journey Mapping Survey',
+    category: 'customer',
+    description: 'Comprehensive customer experience and journey mapping survey to understand touchpoints and pain points',
+    icon: 'Map',
+    questions: [
+      {
+        type: 'multiple-choice',
+        question: 'How did you first discover our product/service?',
+        required: true,
+        options: ['Social media', 'Search engine', 'Friend/family recommendation', 'Advertisement', 'Email marketing', 'Influencer', 'Trade show', 'Other'],
+        description: 'Initial discovery channel'
+      },
+      {
+        type: 'rating',
+        question: 'How easy was it to get started with our product/service?',
+        required: true,
+        options: ['Very Difficult', 'Difficult', 'Neutral', 'Easy', 'Very Easy'],
+        description: 'Rate the onboarding experience'
+      },
+      {
+        type: 'rating',
+        question: 'How satisfied are you with the onboarding process?',
+        required: true,
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate onboarding satisfaction'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What challenges did you face during your customer journey?',
+        required: false,
+        options: ['Technical issues', 'Poor customer service', 'Confusing interface', 'Slow response times', 'Lack of features', 'Pricing concerns', 'Documentation gaps', 'None'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'rating',
+        question: 'How likely are you to continue using our product/service?',
+        required: true,
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future usage likelihood'
+      },
+      {
+        type: 'text',
+        question: 'What would make your experience with us even better?',
+        required: false,
+        description: 'Suggestions for experience improvement'
+      },
+      {
+        type: 'rating',
+        question: 'How would you rate the overall customer experience?',
+        required: true,
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Overall experience rating'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which touchpoints were most important in your journey?',
+        required: false,
+        options: ['Website', 'Mobile app', 'Customer service', 'Documentation', 'Community forums', 'Email communications', 'Social media', 'Other'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'rating',
+        question: 'How well did we meet your expectations throughout your journey?',
+        required: true,
+        options: ['Far Below Expectations', 'Below Expectations', 'Met Expectations', 'Exceeded Expectations', 'Far Exceeded Expectations'],
+        description: 'Expectation fulfillment assessment'
+      },
+      {
+        type: 'text',
+        question: 'Describe your ideal customer experience with our product/service',
+        required: false,
+        description: 'Share your vision for the perfect experience'
+      }
+    ],
+    estimatedTime: '8-10 minutes',
+    responseCount: 0,
+    targetAudience: 'Existing customers, Product users, UX teams, Marketing teams',
+    useCases: ['Customer journey mapping', 'Experience optimization', 'Touchpoint analysis', 'Pain point identification'],
+    insights: ['Journey touchpoints', 'Experience gaps', 'Improvement opportunities', 'Customer expectations']
   },
-  open_ended: {
-    name: "Open-Ended",
-    description: "Free-text response questions",
-    icon: "📝"
-  },
-  dropdowns: {
-    name: "Dropdowns",
-    description: "Questions with dropdown selection options",
-    icon: "📋"
-  },
-  yes_no: {
-    name: "Yes/No or True/False",
-    description: "Binary choice questions",
-    icon: "✅"
-  },
-  ranking: {
-    name: "Ranking Questions",
-    description: "Questions requiring ordering or ranking of options",
-    icon: "📊"
-  },
-  matrix_tables: {
-    name: "Matrix Tables",
-    description: "Complex questions with multiple variables",
-    icon: "📈"
+  {
+    id: 'market-research-comprehensive',
+    name: 'Comprehensive Market Research Survey',
+    category: 'market-research',
+    description: 'In-depth market research survey to understand customer needs, preferences, and market opportunities',
+    icon: 'Target',
+    questions: [
+      {
+        type: 'multiple-choice',
+        question: 'What is your primary role in purchasing decisions?',
+        required: true,
+        options: ['Primary decision maker', 'Influencer', 'User', 'Budget holder', 'Technical evaluator', 'Other'],
+        description: 'Your role in the buying process'
+      },
+      {
+        type: 'rating',
+        question: 'How important is this product/service category to your business?',
+        required: true,
+        options: ['Not Important', 'Somewhat Important', 'Important', 'Very Important', 'Critical'],
+        description: 'Category importance assessment'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What are your primary needs in this product/service category?',
+        required: false,
+        options: ['Cost efficiency', 'Performance', 'Ease of use', 'Integration capabilities', 'Support quality', 'Innovation', 'Reliability', 'Other'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'rating',
+        question: 'How satisfied are you with current solutions in the market?',
+        required: true,
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Current market satisfaction'
+      },
+      {
+        type: 'text',
+        question: 'What problems do you face with current solutions?',
+        required: false,
+        description: 'Describe current pain points'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What features are most important to you?',
+        required: false,
+        options: ['Automation', 'Analytics', 'Mobile access', 'API integration', 'Customization', 'Security', 'Scalability', 'Other'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'rating',
+        question: 'How much would you be willing to pay for an ideal solution?',
+        required: true,
+        options: ['Under $100', '$100-$500', '$500-$1000', '$1000-$5000', 'Over $5000'],
+        description: 'Price sensitivity assessment'
+      },
+      {
+        type: 'multiple-choice',
+        question: 'How do you typically research and evaluate new products/services?',
+        required: false,
+        options: ['Online reviews', 'Industry reports', 'Peer recommendations', 'Trade shows', 'Vendor demos', 'Trial versions', 'Other'],
+        description: 'Select all that apply'
+      },
+      {
+        type: 'rating',
+        question: 'How likely are you to switch to a new solution in the next 12 months?',
+        required: true,
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Market opportunity assessment'
+      },
+      {
+        type: 'text',
+        question: 'What would be your ideal solution in this category?',
+        required: false,
+        description: 'Describe your perfect product/service'
+      }
+    ],
+    estimatedTime: '10-12 minutes',
+    responseCount: 0,
+    targetAudience: 'Potential customers, Market researchers, Product teams, Business analysts',
+    useCases: ['Market opportunity assessment', 'Product development', 'Competitive analysis', 'Customer needs identification'],
+    insights: ['Market gaps', 'Customer needs', 'Price sensitivity', 'Purchase behavior']
   }
-};
+];
 
-// Data collection method categories
-const dataCollectionMethods = {
-  online_surveys: {
-    name: "Online Surveys",
-    description: "Web-based survey distribution",
-    icon: "💻"
+// Original survey templates
+const surveyTemplates = [
+  // Customer Feedback Templates
+  {
+    id: 'customer-satisfaction',
+    name: 'Customer Satisfaction Survey',
+    category: 'customer-feedback',
+    description: 'Comprehensive customer satisfaction survey to measure overall experience and identify improvement opportunities',
+    icon: 'Star',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with our product/service overall?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Please rate your overall satisfaction with our product or service'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the quality of our product/service?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the quality and reliability of our offering'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to recommend us to friends or colleagues?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'This helps us understand our Net Promoter Score'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of our product/service do you value most?', 
+        required: false, 
+        options: ['Quality', 'Price', 'Customer Service', 'Features', 'Ease of Use', 'Reliability', 'Innovation'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'text', 
+        question: 'What do you like most about our product/service?', 
+        required: false,
+        description: 'Please share specific features or aspects you appreciate'
+      },
+      { 
+        type: 'text', 
+        question: 'What could we improve to better meet your needs?', 
+        required: false,
+        description: 'Your feedback helps us enhance our offerings'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How did you first hear about us?', 
+        required: false, 
+        options: ['Social Media', 'Friend/Family Recommendation', 'Advertisement', 'Search Engine', 'Email Marketing', 'Influencer', 'Trade Show', 'Other'],
+        description: 'This helps us understand our marketing effectiveness'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate our customer service experience?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate your experience with our support team'
+      }
+    ],
+    estimatedTime: '5-7 minutes',
+    responseCount: 0,
+    targetAudience: 'Existing customers, Product users, Service recipients',
+    useCases: ['Product feedback', 'Service evaluation', 'Customer experience improvement', 'NPS measurement'],
+    insights: ['Customer satisfaction trends', 'Improvement opportunities', 'Brand perception', 'Service quality assessment']
   },
-  telephone_surveys: {
-    name: "Telephone Surveys",
-    description: "Phone-based survey administration",
-    icon: "📞"
+  {
+    id: 'product-feedback',
+    name: 'Product Feedback Survey',
+    category: 'customer-feedback',
+    description: 'Detailed product feedback survey to understand user experience and feature preferences',
+    icon: 'ShoppingCart',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How easy is our product to use and navigate?', 
+        required: true, 
+        options: ['Very Difficult', 'Difficult', 'Neutral', 'Easy', 'Very Easy'],
+        description: 'Rate the user-friendliness of our product'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the overall product quality?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the quality and craftsmanship'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well does our product meet your needs?', 
+        required: true, 
+        options: ['Not at all', 'Poorly', 'Somewhat', 'Well', 'Very Well'],
+        description: 'Does the product solve your intended problem?'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'Which features do you use most frequently?', 
+        required: false, 
+        options: ['Feature A', 'Feature B', 'Feature C', 'Feature D', 'Feature E', 'All features equally'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'Which features would you like to see improved?', 
+        required: false, 
+        options: ['User Interface', 'Performance', 'Mobile Experience', 'Integration Options', 'Customization', 'Documentation', 'None'],
+        description: 'Select areas for improvement'
+      },
+      { 
+        type: 'text', 
+        question: 'What new features would you like to see in future updates?', 
+        required: false,
+        description: 'Share your ideas for new functionality'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the value for money?', 
+        required: true, 
+        options: ['Poor Value', 'Fair Value', 'Good Value', 'Very Good Value', 'Excellent Value'],
+        description: 'Rate the cost-benefit ratio'
+      },
+      { 
+        type: 'text', 
+        question: 'What challenges do you face when using our product?', 
+        required: false,
+        description: 'Help us identify pain points'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How often do you use our product?', 
+        required: true, 
+        options: ['Daily', 'Weekly', 'Monthly', 'Occasionally', 'Rarely'],
+        description: 'Usage frequency helps us understand engagement'
+      }
+    ],
+    estimatedTime: '6-8 minutes',
+    responseCount: 0,
+    targetAudience: 'Product users, Beta testers, Early adopters',
+    useCases: ['Product development', 'Feature prioritization', 'User experience improvement', 'Product roadmap planning'],
+    insights: ['Feature usage patterns', 'User pain points', 'Improvement priorities', 'User engagement levels']
   },
-  face_to_face: {
-    name: "Face-to-Face Interviews",
-    description: "In-person survey administration",
-    icon: "👥"
+  {
+    id: 'service-quality',
+    name: 'Service Quality Assessment',
+    category: 'customer-feedback',
+    description: 'Comprehensive service quality evaluation to measure customer support effectiveness',
+    icon: 'Star',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you rate the overall quality of our customer service?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate your overall service experience'
+      },
+      { 
+        type: 'rating', 
+        question: 'How quickly were your issues or questions resolved?', 
+        required: true, 
+        options: ['Very Slow', 'Slow', 'Average', 'Fast', 'Very Fast'],
+        description: 'Response time evaluation'
+      },
+      { 
+        type: 'rating', 
+        question: 'How knowledgeable and helpful was our support team?', 
+        required: true, 
+        options: ['Not Helpful', 'Somewhat Helpful', 'Helpful', 'Very Helpful', 'Extremely Helpful'],
+        description: 'Rate the expertise and assistance provided'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How did you contact our support team?', 
+        required: false, 
+        options: ['Phone', 'Email', 'Live Chat', 'Social Media', 'Help Center', 'In-Person', 'Other'],
+        description: 'Select your preferred contact method'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the resolution of your issue?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Were your problems fully resolved?'
+      },
+      { 
+        type: 'text', 
+        question: 'Describe your recent experience with our support team', 
+        required: false,
+        description: 'Share details about your interaction'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What type of issue did you contact us about?', 
+        required: false, 
+        options: ['Technical Problem', 'Billing Question', 'Product Information', 'Feature Request', 'Complaint', 'General Inquiry', 'Other'],
+        description: 'Help us categorize support requests'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to contact our support again if needed?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future support engagement likelihood'
+      },
+      { 
+        type: 'text', 
+        question: 'What could we improve in our customer service?', 
+        required: false,
+        description: 'Suggestions for service enhancement'
+      }
+    ],
+    estimatedTime: '4-6 minutes',
+    responseCount: 0,
+    targetAudience: 'Customers who contacted support, Service users',
+    useCases: ['Service quality improvement', 'Support team evaluation', 'Customer experience enhancement', 'Service training needs'],
+    insights: ['Support effectiveness', 'Response time analysis', 'Customer satisfaction trends', 'Improvement opportunities']
   },
-  paper_based: {
-    name: "Paper-Based Surveys",
-    description: "Traditional paper survey forms",
-    icon: "📄"
+
+  // Employee Survey Templates
+  {
+    id: 'employee-satisfaction',
+    name: 'Employee Satisfaction Survey',
+    category: 'employee',
+    description: 'Comprehensive employee satisfaction and engagement survey to understand workplace satisfaction',
+    icon: 'Users',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with your current role and responsibilities?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate your satisfaction with your job'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the overall work environment and culture?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the workplace atmosphere'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with your compensation and benefits?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate your satisfaction with pay and benefits'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate your relationship with your manager?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate your supervisor relationship'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of your job do you find most rewarding?', 
+        required: false, 
+        options: ['Work-Life Balance', 'Professional Growth', 'Team Collaboration', 'Compensation', 'Job Security', 'Company Mission', 'Work Variety', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'text', 
+        question: 'What would improve your work experience and satisfaction?', 
+        required: false,
+        description: 'Share suggestions for workplace improvement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to recommend this company as a great place to work?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Employee Net Promoter Score'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How long have you been with the company?', 
+        required: true, 
+        options: ['Less than 1 year', '1-2 years', '3-5 years', '6-10 years', 'More than 10 years'],
+        description: 'Tenure information'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with opportunities for career advancement?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate career growth opportunities'
+      }
+    ],
+    estimatedTime: '7-10 minutes',
+    responseCount: 0,
+    targetAudience: 'All employees, HR teams, Management',
+    useCases: ['Employee engagement measurement', 'Workplace improvement', 'Retention analysis', 'Culture assessment'],
+    insights: ['Employee satisfaction trends', 'Engagement drivers', 'Retention risk factors', 'Improvement priorities']
   },
-  sms_mobile: {
-    name: "SMS/Mobile Surveys",
-    description: "Mobile device-based surveys",
-    icon: "📱"
+  {
+    id: 'workplace-culture',
+    name: 'Workplace Culture Survey',
+    category: 'employee',
+    description: 'In-depth workplace culture assessment to understand organizational values and team dynamics',
+    icon: 'Users',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you describe the overall company culture?', 
+        required: true, 
+        options: ['Toxic', 'Poor', 'Average', 'Good', 'Excellent'],
+        description: 'Rate the overall organizational culture'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of our culture do you value most?', 
+        required: false, 
+        options: ['Work-life balance', 'Professional growth', 'Team collaboration', 'Innovation', 'Diversity & Inclusion', 'Transparency', 'Flexibility', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well do teams collaborate and work together?', 
+        required: true, 
+        options: ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'],
+        description: 'Rate cross-team collaboration'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate communication within the organization?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate internal communication effectiveness'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What cultural improvements would you like to see?', 
+        required: false, 
+        options: ['Better Communication', 'More Recognition', 'Increased Flexibility', 'Enhanced Diversity', 'Improved Work-Life Balance', 'More Innovation', 'Better Leadership', 'Other'],
+        description: 'Select areas for cultural improvement'
+      },
+      { 
+        type: 'text', 
+        question: 'How can we improve our workplace culture?', 
+        required: false,
+        description: 'Share specific suggestions for cultural enhancement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well does the company live up to its stated values?', 
+        required: true, 
+        options: ['Not at all', 'Poorly', 'Somewhat', 'Well', 'Very Well'],
+        description: 'Rate alignment with company values'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How do you prefer to receive recognition for your work?', 
+        required: false, 
+        options: ['Public Recognition', 'Private Feedback', 'Monetary Rewards', 'Professional Development', 'Flexible Benefits', 'Other'],
+        description: 'Select your preferred recognition methods'
+      },
+      { 
+        type: 'rating', 
+        question: 'How comfortable do you feel expressing your opinions at work?', 
+        required: true, 
+        options: ['Very Uncomfortable', 'Uncomfortable', 'Neutral', 'Comfortable', 'Very Comfortable'],
+        description: 'Rate psychological safety'
+      }
+    ],
+    estimatedTime: '8-12 minutes',
+    responseCount: 0,
+    targetAudience: 'All employees, HR teams, Leadership',
+    useCases: ['Culture assessment', 'Diversity & inclusion measurement', 'Team dynamics analysis', 'Organizational development'],
+    insights: ['Cultural strengths', 'Improvement areas', 'Employee sentiment', 'Organizational health']
   },
-  kiosk_onsite: {
-    name: "Kiosk or On-site Surveys",
-    description: "Location-based survey kiosks",
-    icon: "🏢"
+  {
+    id: 'performance-review',
+    name: 'Performance Review Survey',
+    category: 'employee',
+    description: 'Comprehensive performance evaluation and feedback collection for professional development',
+    icon: 'Users',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you rate your overall performance this year?', 
+        required: true, 
+        options: ['Below Expectations', 'Meets Expectations', 'Exceeds Expectations', 'Outstanding'],
+        description: 'Self-assessment of your performance'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well did you achieve your goals and objectives?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Goal achievement assessment'
+      },
+      { 
+        type: 'text', 
+        question: 'What are your key achievements and accomplishments this year?', 
+        required: false,
+        description: 'List your major successes and contributions'
+      },
+      { 
+        type: 'text', 
+        question: 'What challenges did you face and how did you overcome them?', 
+        required: false,
+        description: 'Share obstacles and your solutions'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'Which areas would you like to develop or improve?', 
+        required: false, 
+        options: ['Technical Skills', 'Leadership Skills', 'Communication', 'Time Management', 'Problem Solving', 'Team Collaboration', 'Industry Knowledge', 'Other'],
+        description: 'Select development priorities'
+      },
+      { 
+        type: 'text', 
+        question: 'What are your professional goals for the next year?', 
+        required: false,
+        description: 'Share your career and development objectives'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the support and resources provided for your role?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate organizational support'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What type of training or development would be most valuable?', 
+        required: false, 
+        options: ['Technical Training', 'Leadership Development', 'Soft Skills', 'Industry Certifications', 'Mentoring', 'Conferences', 'Online Courses', 'Other'],
+        description: 'Select preferred development methods'
+      },
+      { 
+        type: 'text', 
+        question: 'How can the organization better support your professional growth?', 
+        required: false,
+        description: 'Suggestions for organizational support'
+      }
+    ],
+    estimatedTime: '10-15 minutes',
+    responseCount: 0,
+    targetAudience: 'Employees, Managers, HR teams',
+    useCases: ['Performance evaluation', 'Professional development planning', 'Career pathing', 'Training needs assessment'],
+    insights: ['Performance trends', 'Development needs', 'Career aspirations', 'Support requirements']
+  },
+  {
+    id: 'exit-interview',
+    name: 'Exit Interview Survey',
+    category: 'employee',
+    description: 'Comprehensive exit interview to understand reasons for departure and gather feedback for improvement',
+    icon: 'Building',
+    questions: [
+      { 
+        type: 'multiple-choice', 
+        question: 'What is your primary reason for leaving the company?', 
+        required: true, 
+        options: ['Better opportunity', 'Career growth', 'Work-life balance', 'Compensation', 'Management issues', 'Company culture', 'Relocation', 'Personal reasons', 'Other'],
+        description: 'Select the main factor influencing your decision'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate your overall experience working here?', 
+        required: true, 
+        options: ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'],
+        description: 'Rate your overall employment experience'
+      },
+      { 
+        type: 'text', 
+        question: 'What did you enjoy most about working here?', 
+        required: false,
+        description: 'Share positive aspects of your experience'
+      },
+      { 
+        type: 'text', 
+        question: 'What could we improve to make this a better workplace?', 
+        required: false,
+        description: 'Suggestions for workplace improvement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate your relationship with your manager?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate your supervisor relationship'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of the job met your expectations?', 
+        required: false, 
+        options: ['Role responsibilities', 'Compensation', 'Benefits', 'Work environment', 'Career growth', 'Company culture', 'Work-life balance', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of the job did not meet your expectations?', 
+        required: false, 
+        options: ['Role responsibilities', 'Compensation', 'Benefits', 'Work environment', 'Career growth', 'Company culture', 'Work-life balance', 'Management', 'Other'],
+        description: 'Select areas that fell short'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to recommend this company to others?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Would you recommend us to friends or colleagues?'
+      },
+      { 
+        type: 'text', 
+        question: 'Is there anything else you would like to share about your experience?', 
+        required: false,
+        description: 'Additional feedback or comments'
+      }
+    ],
+    estimatedTime: '8-12 minutes',
+    responseCount: 0,
+    targetAudience: 'Departing employees, HR teams, Management',
+    useCases: ['Retention analysis', 'Workplace improvement', 'Culture assessment', 'Management feedback'],
+    insights: ['Departure reasons', 'Retention risk factors', 'Improvement opportunities', 'Employee satisfaction trends']
+  },
+  {
+    id: 'course-evaluation',
+    name: 'Course Evaluation Survey',
+    category: 'academic',
+    description: 'Comprehensive course evaluation to assess learning outcomes and teaching effectiveness',
+    icon: 'GraduationCap',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you rate the overall quality of this course?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the overall course quality'
+      },
+      { 
+        type: 'rating', 
+        question: 'How effective was the instructor in delivering the course content?', 
+        required: true, 
+        options: ['Very Ineffective', 'Ineffective', 'Average', 'Effective', 'Very Effective'],
+        description: 'Rate the instructor\'s teaching effectiveness'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well did the course materials support your learning?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the quality and relevance of course materials'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'Which teaching methods were most effective for your learning?', 
+        required: false, 
+        options: ['Lectures', 'Group Discussions', 'Hands-on Activities', 'Case Studies', 'Online Resources', 'Guest Speakers', 'Projects', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'text', 
+        question: 'What did you learn from this course?', 
+        required: false,
+        description: 'Share key takeaways and learning outcomes'
+      },
+      { 
+        type: 'text', 
+        question: 'How could this course be improved?', 
+        required: false,
+        description: 'Suggestions for course enhancement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well did the course meet your learning objectives?', 
+        required: true, 
+        options: ['Not at all', 'Poorly', 'Somewhat', 'Well', 'Very Well'],
+        description: 'Did the course achieve your learning goals?'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What was your preferred learning format?', 
+        required: false, 
+        options: ['In-person', 'Online', 'Hybrid', 'Self-paced', 'Group-based', 'Individual'],
+        description: 'Select your preferred learning method'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to recommend this course to others?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Course recommendation likelihood'
+      }
+    ],
+    estimatedTime: '6-8 minutes',
+    responseCount: 0,
+    targetAudience: 'Students, Course participants, Educational institutions',
+    useCases: ['Course evaluation', 'Teaching effectiveness assessment', 'Curriculum improvement', 'Student satisfaction measurement'],
+    insights: ['Learning outcomes', 'Teaching effectiveness', 'Course improvement areas', 'Student satisfaction trends']
+  },
+  {
+    id: 'student-satisfaction',
+    name: 'Student Satisfaction Survey',
+    category: 'academic',
+    description: 'Comprehensive student satisfaction survey to evaluate educational experience and institutional support',
+    icon: 'GraduationCap',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with your overall educational experience?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate your overall satisfaction with your education'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the quality of instruction and teaching?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the quality of teaching and instruction'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'Which campus services do you use most frequently?', 
+        required: false, 
+        options: ['Library', 'Career Services', 'Student Health', 'Counseling', 'Academic Advising', 'Financial Aid', 'IT Support', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with campus facilities and resources?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate campus facilities and resources'
+      },
+      { 
+        type: 'text', 
+        question: 'What additional services would you like to see offered?', 
+        required: false,
+        description: 'Suggestions for new services or improvements'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to recommend this institution to others?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Institution recommendation likelihood'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of your education are most valuable?', 
+        required: false, 
+        options: ['Academic Quality', 'Career Preparation', 'Personal Growth', 'Networking', 'Research Opportunities', 'Extracurricular Activities', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well does the institution support student success?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate institutional support for student success'
+      },
+      { 
+        type: 'text', 
+        question: 'What could the institution improve to better support students?', 
+        required: false,
+        description: 'Suggestions for institutional improvement'
+      }
+    ],
+    estimatedTime: '7-10 minutes',
+    responseCount: 0,
+    targetAudience: 'Students, Educational institutions, Academic administrators',
+    useCases: ['Student satisfaction measurement', 'Institutional improvement', 'Service evaluation', 'Retention analysis'],
+    insights: ['Student satisfaction trends', 'Service effectiveness', 'Improvement priorities', 'Institutional strengths']
+  },
+  {
+    id: 'faculty-feedback',
+    name: 'Faculty Feedback Survey',
+    category: 'academic',
+    description: 'Comprehensive faculty feedback survey to assess institutional support and professional development needs',
+    icon: 'GraduationCap',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with institutional support for your role?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate institutional support for faculty'
+      },
+      { 
+        type: 'text', 
+        question: 'What resources do you need most to be effective in your role?', 
+        required: false,
+        description: 'Share your resource needs and priorities'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate professional development opportunities?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate professional development offerings'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What type of professional development would be most valuable?', 
+        required: false, 
+        options: ['Teaching Methods', 'Research Support', 'Technology Training', 'Leadership Development', 'Grant Writing', 'Industry Collaboration', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well does the institution support research and scholarship?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate research support and resources'
+      },
+      { 
+        type: 'text', 
+        question: 'How can we better support faculty in their professional growth?', 
+        required: false,
+        description: 'Suggestions for faculty support improvement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with work-life balance at the institution?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate work-life balance support'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What challenges do you face in your role?', 
+        required: false, 
+        options: ['Workload', 'Resources', 'Administrative Support', 'Student Engagement', 'Research Funding', 'Technology', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to recommend this institution to other faculty?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Faculty recommendation likelihood'
+      }
+    ],
+    estimatedTime: '8-12 minutes',
+    responseCount: 0,
+    targetAudience: 'Faculty members, Academic administrators, HR teams',
+    useCases: ['Faculty satisfaction measurement', 'Professional development planning', 'Institutional improvement', 'Retention analysis'],
+    insights: ['Faculty satisfaction trends', 'Support needs', 'Development priorities', 'Institutional challenges']
+  },
+  {
+    id: 'patient-satisfaction',
+    name: 'Patient Satisfaction Survey',
+    category: 'health',
+    description: 'Comprehensive patient satisfaction survey to evaluate healthcare experience and service quality',
+    icon: 'Heart',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the care you received?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate your overall satisfaction with care'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the professionalism of our staff?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate staff professionalism and courtesy'
+      },
+      { 
+        type: 'text', 
+        question: 'What was your experience like during your visit?', 
+        required: false,
+        description: 'Share details about your healthcare experience'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How likely are you to recommend this facility to others?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Healthcare facility recommendation likelihood'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well did our staff communicate with you?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate communication clarity and effectiveness'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of your care were most important to you?', 
+        required: false, 
+        options: ['Medical Quality', 'Staff Courtesy', 'Wait Times', 'Facility Cleanliness', 'Communication', 'Cost', 'Convenience', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the wait times?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate satisfaction with appointment and wait times'
+      },
+      { 
+        type: 'text', 
+        question: 'What could we improve to better serve our patients?', 
+        required: false,
+        description: 'Suggestions for healthcare service improvement'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How did you hear about our facility?', 
+        required: false, 
+        options: ['Doctor Referral', 'Friend/Family', 'Insurance Provider', 'Online Search', 'Advertisement', 'Other'],
+        description: 'Help us understand patient acquisition'
+      }
+    ],
+    estimatedTime: '5-7 minutes',
+    responseCount: 0,
+    targetAudience: 'Patients, Healthcare providers, Medical facilities',
+    useCases: ['Patient satisfaction measurement', 'Healthcare quality improvement', 'Service evaluation', 'Patient experience enhancement'],
+    insights: ['Patient satisfaction trends', 'Service quality assessment', 'Improvement opportunities', 'Patient experience drivers']
+  },
+  {
+    id: 'healthcare-quality',
+    name: 'Healthcare Quality Assessment',
+    category: 'health',
+    description: 'Comprehensive healthcare quality assessment to evaluate treatment effectiveness and patient outcomes',
+    icon: 'Heart',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you rate the quality of care you received?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate the overall quality of healthcare received'
+      },
+      { 
+        type: 'rating', 
+        question: 'How effective was the treatment for your condition?', 
+        required: true, 
+        options: ['Very Ineffective', 'Ineffective', 'Average', 'Effective', 'Very Effective'],
+        description: 'Rate treatment effectiveness'
+      },
+      { 
+        type: 'text', 
+        question: 'What improvements would you suggest?', 
+        required: false,
+        description: 'Suggestions for healthcare quality improvement'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How long did you wait for care?', 
+        required: false, 
+        options: ['Less than 15 minutes', '15-30 minutes', '30-60 minutes', 'More than 1 hour'],
+        description: 'Wait time assessment'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well did your healthcare provider explain your treatment?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate treatment explanation clarity'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What type of care did you receive?', 
+        required: false, 
+        options: ['Primary Care', 'Specialist Care', 'Emergency Care', 'Surgical Care', 'Preventive Care', 'Diagnostic Testing', 'Other'],
+        description: 'Care type classification'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the follow-up care?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate follow-up care satisfaction'
+      },
+      { 
+        type: 'text', 
+        question: 'How has your health improved since receiving care?', 
+        required: false,
+        description: 'Share health outcome improvements'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to return to this facility for future care?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future care likelihood'
+      }
+    ],
+    estimatedTime: '6-8 minutes',
+    responseCount: 0,
+    targetAudience: 'Patients, Healthcare providers, Quality assurance teams',
+    useCases: ['Healthcare quality measurement', 'Treatment effectiveness evaluation', 'Patient outcome assessment', 'Quality improvement'],
+    insights: ['Treatment effectiveness', 'Quality metrics', 'Patient outcomes', 'Improvement areas']
+  },
+  {
+    id: 'wellness-program',
+    name: 'Wellness Program Evaluation',
+    category: 'health',
+    description: 'Comprehensive wellness program evaluation to assess program effectiveness and participant satisfaction',
+    icon: 'Heart',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How effective is the wellness program in meeting your health goals?', 
+        required: true, 
+        options: ['Very Ineffective', 'Ineffective', 'Average', 'Effective', 'Very Effective'],
+        description: 'Rate program effectiveness for your goals'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'Which wellness activities do you participate in?', 
+        required: false, 
+        options: ['Fitness classes', 'Nutrition counseling', 'Mental health support', 'Health screenings', 'Stress management', 'Smoking cessation', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'text', 
+        question: 'What wellness services would you like to see offered?', 
+        required: false,
+        description: 'Suggestions for new wellness services'
+      },
+      { 
+        type: 'rating', 
+        question: 'How has the program impacted your health?', 
+        required: true, 
+        options: ['No impact', 'Slight improvement', 'Moderate improvement', 'Significant improvement'],
+        description: 'Health impact assessment'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the wellness program overall?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Overall program satisfaction'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What motivates you to participate in wellness activities?', 
+        required: false, 
+        options: ['Health improvement', 'Weight management', 'Stress reduction', 'Social connection', 'Incentives', 'Medical recommendation', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How accessible are the wellness program activities?', 
+        required: true, 
+        options: ['Very Inaccessible', 'Inaccessible', 'Somewhat Accessible', 'Accessible', 'Very Accessible'],
+        description: 'Rate program accessibility'
+      },
+      { 
+        type: 'text', 
+        question: 'What barriers prevent you from participating more in wellness activities?', 
+        required: false,
+        description: 'Share participation barriers'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to continue participating in the wellness program?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future participation likelihood'
+      }
+    ],
+    estimatedTime: '7-10 minutes',
+    responseCount: 0,
+    targetAudience: 'Wellness program participants, Healthcare providers, HR teams',
+    useCases: ['Wellness program evaluation', 'Health outcome measurement', 'Program improvement', 'Participation analysis'],
+    insights: ['Program effectiveness', 'Participation patterns', 'Health outcomes', 'Improvement opportunities']
+  },
+  {
+    id: 'event-feedback',
+    name: 'Event Feedback Survey',
+    category: 'event',
+    description: 'Comprehensive event feedback survey to evaluate attendee experience and event success',
+    icon: 'Calendar',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you rate the event overall?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate your overall event experience'
+      },
+      { 
+        type: 'text', 
+        question: 'What did you enjoy most about the event?', 
+        required: false,
+        description: 'Share your favorite aspects of the event'
+      },
+      { 
+        type: 'text', 
+        question: 'What could be improved for future events?', 
+        required: false,
+        description: 'Suggestions for event enhancement'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How likely are you to attend future events?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future event attendance likelihood'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the event organization and logistics?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate event planning and execution'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What aspects of the event were most valuable?', 
+        required: false, 
+        options: ['Networking', 'Content/Sessions', 'Speakers', 'Venue', 'Food & Refreshments', 'Entertainment', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the event venue and facilities?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate venue and facility satisfaction'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How did you hear about this event?', 
+        required: false, 
+        options: ['Email', 'Social Media', 'Website', 'Friend/Colleague', 'Advertisement', 'Event Listing', 'Other'],
+        description: 'Event marketing effectiveness'
+      },
+      { 
+        type: 'text', 
+        question: 'What topics or themes would you like to see at future events?', 
+        required: false,
+        description: 'Suggestions for future event content'
+      }
+    ],
+    estimatedTime: '4-6 minutes',
+    responseCount: 0,
+    targetAudience: 'Event attendees, Event organizers, Marketing teams',
+    useCases: ['Event evaluation', 'Attendee satisfaction measurement', 'Event improvement', 'Future planning'],
+    insights: ['Event success metrics', 'Attendee preferences', 'Improvement areas', 'Marketing effectiveness']
+  },
+  {
+    id: 'conference-evaluation',
+    name: 'Conference Evaluation Survey',
+    category: 'event',
+    description: 'Comprehensive conference evaluation to assess session quality and overall conference experience',
+    icon: 'Calendar',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How would you rate the conference organization?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate overall conference organization'
+      },
+      { 
+        type: 'rating', 
+        question: 'How valuable were the conference sessions?', 
+        required: true, 
+        options: ['Not Valuable', 'Somewhat Valuable', 'Valuable', 'Very Valuable', 'Extremely Valuable'],
+        description: 'Rate session value and relevance'
+      },
+      { 
+        type: 'text', 
+        question: 'Which sessions were most valuable?', 
+        required: false,
+        description: 'Share your favorite sessions'
+      },
+      { 
+        type: 'text', 
+        question: 'What topics would you like to see covered?', 
+        required: false,
+        description: 'Suggestions for future conference topics'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the quality of speakers?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate speaker quality and expertise'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What conference activities did you participate in?', 
+        required: false, 
+        options: ['Keynote Sessions', 'Breakout Sessions', 'Workshops', 'Networking Events', 'Exhibition Hall', 'Poster Sessions', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with networking opportunities?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate networking experience'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What was your primary reason for attending?', 
+        required: false, 
+        options: ['Professional Development', 'Networking', 'Learning New Skills', 'Industry Updates', 'Research Presentation', 'Career Opportunities', 'Other'],
+        description: 'Conference attendance motivation'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to attend this conference again?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future conference attendance likelihood'
+      }
+    ],
+    estimatedTime: '5-7 minutes',
+    responseCount: 0,
+    targetAudience: 'Conference attendees, Event organizers, Professional associations',
+    useCases: ['Conference evaluation', 'Session quality assessment', 'Speaker evaluation', 'Future planning'],
+    insights: ['Conference success metrics', 'Session effectiveness', 'Attendee satisfaction', 'Improvement areas']
+  },
+  {
+    id: 'workshop-feedback',
+    name: 'Workshop Feedback Survey',
+    category: 'event',
+    description: 'Comprehensive workshop evaluation to assess learning outcomes and workshop effectiveness',
+    icon: 'Calendar',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How effective was the workshop?', 
+        required: true, 
+        options: ['Very Ineffective', 'Ineffective', 'Average', 'Effective', 'Very Effective'],
+        description: 'Rate workshop effectiveness'
+      },
+      { 
+        type: 'text', 
+        question: 'What skills did you learn?', 
+        required: false,
+        description: 'Share specific skills and knowledge gained'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well was the material presented?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate presentation quality'
+      },
+      { 
+        type: 'text', 
+        question: 'How could the workshop be improved?', 
+        required: false,
+        description: 'Suggestions for workshop enhancement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with the workshop duration?', 
+        required: true, 
+        options: ['Too Short', 'Somewhat Short', 'Just Right', 'Somewhat Long', 'Too Long'],
+        description: 'Rate workshop length appropriateness'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What workshop activities were most helpful?', 
+        required: false, 
+        options: ['Hands-on Exercises', 'Group Discussions', 'Case Studies', 'Presentations', 'Q&A Sessions', 'Individual Work', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well did the workshop meet your learning objectives?', 
+        required: true, 
+        options: ['Not at all', 'Poorly', 'Somewhat', 'Well', 'Very Well'],
+        description: 'Learning objective achievement'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What is your experience level in this topic?', 
+        required: true, 
+        options: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
+        description: 'Experience level assessment'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to apply what you learned?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Knowledge application likelihood'
+      }
+    ],
+    estimatedTime: '4-6 minutes',
+    responseCount: 0,
+    targetAudience: 'Workshop participants, Training organizers, Educational institutions',
+    useCases: ['Workshop evaluation', 'Learning outcome assessment', 'Training effectiveness', 'Curriculum improvement'],
+    insights: ['Learning effectiveness', 'Skill development', 'Training quality', 'Improvement opportunities']
+  },
+  {
+    id: 'community-needs',
+    name: 'Community Needs Assessment',
+    category: 'community',
+    description: 'Comprehensive community needs assessment to identify priorities and development opportunities',
+    icon: 'Target',
+    questions: [
+      { 
+        type: 'multiple-choice', 
+        question: 'What are the most pressing community needs?', 
+        required: true, 
+        options: ['Education', 'Healthcare', 'Housing', 'Transportation', 'Safety', 'Employment', 'Recreation', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with community services?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate community service satisfaction'
+      },
+      { 
+        type: 'text', 
+        question: 'What services are missing in your community?', 
+        required: false,
+        description: 'Identify gaps in community services'
+      },
+      { 
+        type: 'text', 
+        question: 'How can we better serve the community?', 
+        required: false,
+        description: 'Suggestions for community improvement'
+      },
+      { 
+        type: 'rating', 
+        question: 'How would you rate the quality of life in your community?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Overall quality of life assessment'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What community improvements would benefit you most?', 
+        required: false, 
+        options: ['Better Schools', 'Healthcare Facilities', 'Public Transportation', 'Parks & Recreation', 'Job Opportunities', 'Safety Programs', 'Cultural Activities', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How involved are you in community activities?', 
+        required: true, 
+        options: ['Not Involved', 'Rarely Involved', 'Sometimes Involved', 'Often Involved', 'Very Involved'],
+        description: 'Community engagement level'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What barriers prevent you from participating in community activities?', 
+        required: false, 
+        options: ['Time Constraints', 'Transportation', 'Cost', 'Lack of Information', 'Health Issues', 'Family Responsibilities', 'None', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'text', 
+        question: 'What would encourage you to participate more in community activities?', 
+        required: false,
+        description: 'Suggestions for increasing community participation'
+      }
+    ],
+    estimatedTime: '6-8 minutes',
+    responseCount: 0,
+    targetAudience: 'Community members, Local government, Non-profit organizations',
+    useCases: ['Community planning', 'Service development', 'Resource allocation', 'Program design'],
+    insights: ['Community priorities', 'Service gaps', 'Quality of life factors', 'Engagement barriers']
+  },
+  {
+    id: 'public-opinion',
+    name: 'Public Opinion Survey',
+    category: 'community',
+    description: 'Comprehensive public opinion survey to gather community perspectives on important issues',
+    icon: 'Target',
+    questions: [
+      { 
+        type: 'multiple-choice', 
+        question: 'What is your stance on the main issue?', 
+        required: true, 
+        options: ['Strongly Support', 'Support', 'Neutral', 'Oppose', 'Strongly Oppose'],
+        description: 'Position on the primary issue'
+      },
+      { 
+        type: 'text', 
+        question: 'What factors influence your opinion?', 
+        required: false,
+        description: 'Share the factors that shape your perspective'
+      },
+      { 
+        type: 'rating', 
+        question: 'How important is this issue to you?', 
+        required: true, 
+        options: ['Not Important', 'Somewhat Important', 'Important', 'Very Important', 'Extremely Important'],
+        description: 'Issue importance assessment'
+      },
+      { 
+        type: 'text', 
+        question: 'What solutions would you suggest?', 
+        required: false,
+        description: 'Share your proposed solutions'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'How do you typically stay informed about community issues?', 
+        required: false, 
+        options: ['Local News', 'Social Media', 'Community Meetings', 'Word of Mouth', 'Government Communications', 'Online Sources', 'Other'],
+        description: 'Information source preferences'
+      },
+      { 
+        type: 'rating', 
+        question: 'How confident are you in your understanding of this issue?', 
+        required: true, 
+        options: ['Not Confident', 'Somewhat Confident', 'Confident', 'Very Confident', 'Extremely Confident'],
+        description: 'Issue understanding confidence'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What concerns do you have about this issue?', 
+        required: false, 
+        options: ['Economic Impact', 'Environmental Impact', 'Social Impact', 'Safety Concerns', 'Cost Implications', 'Implementation Challenges', 'None', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to participate in community discussions about this issue?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Community participation likelihood'
+      },
+      { 
+        type: 'text', 
+        question: 'What additional information would help you form a better opinion?', 
+        required: false,
+        description: 'Information needs for informed decision-making'
+      }
+    ],
+    estimatedTime: '5-7 minutes',
+    responseCount: 0,
+    targetAudience: 'Community members, Local government, Advocacy groups',
+    useCases: ['Public opinion measurement', 'Policy development', 'Community engagement', 'Issue awareness'],
+    insights: ['Public sentiment', 'Issue priorities', 'Information needs', 'Engagement opportunities']
+  },
+  {
+    id: 'volunteer-satisfaction',
+    name: 'Volunteer Satisfaction Survey',
+    category: 'community',
+    description: 'Comprehensive volunteer satisfaction survey to evaluate volunteer experience and program effectiveness',
+    icon: 'Target',
+    questions: [
+      { 
+        type: 'rating', 
+        question: 'How satisfied are you with your volunteer experience?', 
+        required: true, 
+        options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+        description: 'Rate your overall volunteer satisfaction'
+      },
+      { 
+        type: 'text', 
+        question: 'What do you enjoy most about volunteering?', 
+        required: false,
+        description: 'Share your favorite aspects of volunteering'
+      },
+      { 
+        type: 'rating', 
+        question: 'How well are you supported as a volunteer?', 
+        required: true, 
+        options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+        description: 'Rate volunteer support and resources'
+      },
+      { 
+        type: 'text', 
+        question: 'How can we improve the volunteer program?', 
+        required: false,
+        description: 'Suggestions for program enhancement'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What volunteer activities do you participate in?', 
+        required: false, 
+        options: ['Direct Service', 'Administrative Support', 'Event Planning', 'Fundraising', 'Mentoring', 'Outreach', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How meaningful do you find your volunteer work?', 
+        required: true, 
+        options: ['Not Meaningful', 'Somewhat Meaningful', 'Meaningful', 'Very Meaningful', 'Extremely Meaningful'],
+        description: 'Rate the meaningfulness of your work'
+      },
+      { 
+        type: 'multiple-choice', 
+        question: 'What motivates you to volunteer?', 
+        required: false, 
+        options: ['Helping Others', 'Community Impact', 'Skill Development', 'Social Connection', 'Personal Growth', 'Professional Experience', 'Other'],
+        description: 'Select all that apply'
+      },
+      { 
+        type: 'rating', 
+        question: 'How likely are you to continue volunteering?', 
+        required: true, 
+        options: ['Very Unlikely', 'Unlikely', 'Neutral', 'Likely', 'Very Likely'],
+        description: 'Future volunteer commitment'
+      },
+      { 
+        type: 'text', 
+        question: 'What additional training or support would be helpful?', 
+        required: false,
+        description: 'Suggestions for volunteer development'
+      }
+    ],
+    estimatedTime: '5-7 minutes',
+    responseCount: 0,
+    targetAudience: 'Volunteers, Non-profit organizations, Community groups',
+    useCases: ['Volunteer satisfaction measurement', 'Program improvement', 'Retention analysis', 'Volunteer development'],
+    insights: ['Volunteer satisfaction trends', 'Motivation factors', 'Support needs', 'Retention drivers']
   }
-};
+];
 
-// Flatten templates for easier access
-const surveyTemplates = {};
-Object.keys(surveyCategories).forEach(categoryKey => {
-  const category = surveyCategories[categoryKey];
-  Object.keys(category.subcategories).forEach(subcategoryKey => {
-    const subcategory = category.subcategories[subcategoryKey];
-    const templateKey = `${categoryKey}_${subcategoryKey}`;
-    surveyTemplates[templateKey] = {
-      title: subcategory.title,
-      description: subcategory.description,
-      category: category.name,
-      subcategory: subcategoryKey,
-      icon: subcategory.icon,
-      questions: subcategory.questions
-    };
-  });
-});
-
-// GET /api/templates - Get all available templates
+// GET /api/templates - Get all templates (surveys and events)
 router.get('/', auth, async (req, res) => {
   try {
-    const templates = Object.keys(surveyTemplates).map(key => ({
-      id: key,
-      ...surveyTemplates[key]
-    }));
-    
-    res.json(templates);
+    // Combine all templates
+    const allTemplates = [
+      ...surveyTemplates,
+      ...advancedSurveyTemplates,
+      ...advancedEventTemplates
+    ];
+
+    res.json(allTemplates);
   } catch (error) {
     console.error('Error fetching templates:', error);
     res.status(500).json({ error: 'Failed to fetch templates' });
   }
 });
 
-// GET /api/templates/categories - Get all survey categories
-router.get('/categories', auth, async (req, res) => {
+// GET /api/templates/surveys - Get only survey templates
+router.get('/surveys', auth, async (req, res) => {
   try {
-    res.json({
-      categories: surveyCategories,
-      questionFormats: questionFormats,
-      dataCollectionMethods: dataCollectionMethods
-    });
+    const surveyTemplatesAll = [...surveyTemplates, ...advancedSurveyTemplates];
+    res.json(surveyTemplatesAll);
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({ error: 'Failed to fetch categories' });
+    console.error('Error fetching survey templates:', error);
+    res.status(500).json({ error: 'Failed to fetch survey templates' });
   }
 });
 
-// GET /api/templates/category/:categoryId - Get templates by category
-router.get('/category/:categoryId', auth, async (req, res) => {
+// GET /api/templates/events - Get only event templates
+router.get('/events', auth, async (req, res) => {
   try {
-    const { categoryId } = req.params;
-    
-    if (!surveyCategories[categoryId]) {
-      return res.status(404).json({ error: 'Category not found' });
-    }
-    
-    const category = surveyCategories[categoryId];
-    const templates = Object.keys(category.subcategories).map(subcategoryKey => {
-      const subcategory = category.subcategories[subcategoryKey];
-      const templateKey = `${categoryId}_${subcategoryKey}`;
-      return {
-        id: templateKey,
-        title: subcategory.title,
-        description: subcategory.description,
-        category: category.name,
-        subcategory: subcategoryKey,
-        icon: subcategory.icon,
-        questions: subcategory.questions
-      };
-    });
-    
-    res.json({
-      category: category,
-      templates: templates
-    });
+    res.json(advancedEventTemplates);
   } catch (error) {
-    console.error('Error fetching category templates:', error);
-    res.status(500).json({ error: 'Failed to fetch category templates' });
+    console.error('Error fetching event templates:', error);
+    res.status(500).json({ error: 'Failed to fetch event templates' });
   }
 });
 
-// GET /api/templates/:id - Get a specific template
+// GET /api/templates/:id - Get specific template
 router.get('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
     
-    if (!surveyTemplates[id]) {
+    // Search in all template arrays
+    const allTemplates = [
+      ...surveyTemplates,
+      ...advancedSurveyTemplates,
+      ...advancedEventTemplates
+    ];
+    
+    const template = allTemplates.find(t => t.id === id);
+    
+    if (!template) {
       return res.status(404).json({ error: 'Template not found' });
     }
     
-    res.json({
-      id,
-      ...surveyTemplates[id]
-    });
+    res.json(template);
   } catch (error) {
     console.error('Error fetching template:', error);
     res.status(500).json({ error: 'Failed to fetch template' });
   }
 });
 
-// POST /api/templates/:id/create - Create a survey from template
-router.post('/:id/create', auth, async (req, res) => {
+// POST /api/templates - Create new template
+router.post('/', auth, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, description } = req.body;
+    const { name, description, category, icon, questions, templateType, fields, features } = req.body;
+    const userId = req.user.id;
     
-    if (!surveyTemplates[id]) {
-      return res.status(404).json({ error: 'Template not found' });
-    }
+    // Generate unique ID
+    const id = `${category}-${Date.now()}`;
     
-    const template = surveyTemplates[id];
+    const newTemplate = {
+      id,
+      name,
+      description,
+      category,
+      icon,
+      questions: questions || [],
+      templateType: templateType || 'survey',
+      fields: fields || [],
+      features: features || [],
+      createdBy: userId,
+      createdAt: new Date().toISOString(),
+      estimatedTime: '2-3 minutes',
+      responseCount: 0
+    };
     
-    // Create the survey
-    const surveyResult = await query(
-      `INSERT INTO surveys (user_id, title, description, status, theme, settings)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id`,
-      [
-        req.user.id,
-        title || template.title,
-        description || template.description,
-        'draft',
-        JSON.stringify({ primaryColor: '#3B82F6', secondaryColor: '#1E40AF' }),
-        JSON.stringify({ allowAnonymous: true, showProgress: true })
-      ]
-    );
-    
-    const surveyId = surveyResult.rows[0].id;
-    
-    // Create questions from template
-    for (let i = 0; i < template.questions.length; i++) {
-      const question = template.questions[i];
-      await query(
-        `INSERT INTO questions (survey_id, title, type, required, options, order_index)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          surveyId,
-          question.text,
-          question.type,
-          question.required,
-          JSON.stringify(question.options || []),
-          i + 1
-        ]
-      );
-    }
-    
-    res.json({
-      message: 'Survey created from template successfully',
-      surveyId,
-      survey: {
-        id: surveyId,
-        title: title || template.title,
-        description: description || template.description
-      }
-    });
-    
+    // In a real app, you'd save to database
+    // For now, we'll return the template
+    res.status(201).json(newTemplate);
   } catch (error) {
-    console.error('Error creating survey from template:', error);
-    res.status(500).json({ error: 'Failed to create survey from template' });
+    console.error('Error creating template:', error);
+    res.status(500).json({ error: 'Failed to create template' });
   }
 });
 
-// PUT /api/templates/:id - Update a template
+// PUT /api/templates/:id - Update template
 router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, questions } = req.body;
+    const { name, description, category, icon, questions, fields, features } = req.body;
+    const userId = req.user.id;
     
-    if (!surveyTemplates[id]) {
-      return res.status(404).json({ error: 'Template not found' });
-    }
-    
-    // Update template (in a real app, you'd store templates in database)
-    surveyTemplates[id] = {
-      ...surveyTemplates[id],
-      title: title || surveyTemplates[id].title,
-      description: description || surveyTemplates[id].description,
-      questions: questions || surveyTemplates[id].questions
+    // In a real app, you'd update in database
+    // For now, we'll return the updated template
+    const updatedTemplate = {
+      id,
+      name,
+      description,
+      category,
+      icon,
+      questions: questions || [],
+      fields: fields || [],
+      features: features || [],
+      updatedBy: userId,
+      updatedAt: new Date().toISOString(),
+      estimatedTime: '2-3 minutes',
+      responseCount: 0
     };
     
-    res.json({
-      message: 'Template updated successfully',
-      template: { id, ...surveyTemplates[id] }
-    });
+    res.json(updatedTemplate);
   } catch (error) {
     console.error('Error updating template:', error);
     res.status(500).json({ error: 'Failed to update template' });
   }
 });
 
-// POST /api/templates/:id/duplicate - Duplicate a template
+// POST /api/templates/:id/duplicate - Duplicate template
 router.post('/:id/duplicate', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { name, description } = req.body;
+    const userId = req.user.id;
     
-    if (!surveyTemplates[id]) {
+    // Find original template
+    const allTemplates = [
+      ...surveyTemplates,
+      ...advancedSurveyTemplates,
+      ...advancedEventTemplates
+    ];
+    
+    const originalTemplate = allTemplates.find(t => t.id === id);
+    
+    if (!originalTemplate) {
       return res.status(404).json({ error: 'Template not found' });
     }
     
-    const originalTemplate = surveyTemplates[id];
-    const newId = `template_${Date.now()}`;
-    
-    // Create duplicate template
-    surveyTemplates[newId] = {
+    // Create duplicate
+    const duplicatedTemplate = {
       ...originalTemplate,
-      title: title || `${originalTemplate.title} (Copy)`,
-      description: description || originalTemplate.description
+      id: `${originalTemplate.id}-copy-${Date.now()}`,
+      name: name || `${originalTemplate.name} (Copy)`,
+      description: description || originalTemplate.description,
+      createdBy: userId,
+      createdAt: new Date().toISOString(),
+      responseCount: 0
     };
     
-    res.json({
-      message: 'Template duplicated successfully',
-      template: { id: newId, ...surveyTemplates[newId] }
-    });
+    res.status(201).json(duplicatedTemplate);
   } catch (error) {
     console.error('Error duplicating template:', error);
     res.status(500).json({ error: 'Failed to duplicate template' });
   }
 });
 
-// DELETE /api/templates/:id - Delete a template
+// DELETE /api/templates/:id - Delete template
 router.delete('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     
-    if (!surveyTemplates[id]) {
-      return res.status(404).json({ error: 'Template not found' });
-    }
-    
-    // Delete template (in a real app, you'd delete from database)
-    delete surveyTemplates[id];
-    
+    // In a real app, you'd delete from database
+    // For now, we'll just return success
     res.json({ message: 'Template deleted successfully' });
   } catch (error) {
     console.error('Error deleting template:', error);

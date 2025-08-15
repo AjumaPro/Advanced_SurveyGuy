@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Download, X, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Download, X, CheckCircle, File } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
@@ -19,6 +19,11 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
   };
 
   const parseFile = (file) => {
+    if (uploadMethod === 'word') {
+      parseWordDocument(file);
+      return;
+    }
+    
     const reader = new FileReader();
     
     reader.onload = (e) => {
@@ -42,6 +47,95 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
     };
     
     reader.readAsText(file);
+  };
+
+  const parseWordDocument = async (file) => {
+    try {
+      const text = await extractTextFromWord(file);
+      const questions = parseWordText(text);
+      setPreviewQuestions(questions);
+      toast.success(`Parsed ${questions.length} questions from Word document`);
+    } catch (error) {
+      console.error('Error parsing Word document:', error);
+      toast.error('Error parsing Word document. Please ensure it contains properly formatted questions.');
+    }
+  };
+
+  const extractTextFromWord = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target.result;
+          const text = await extractTextFromDocx(arrayBuffer);
+          resolve(text);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const extractTextFromDocx = async (arrayBuffer) => {
+    try {
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const text = new TextDecoder().decode(uint8Array);
+      const textContent = extractTextContent(text);
+      return textContent;
+    } catch (error) {
+      throw new Error('Failed to extract text from Word document');
+    }
+  };
+
+  const extractTextContent = (text) => {
+    return text
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const parseWordText = (text) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const questions = [];
+    let currentQuestion = null;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.match(/^\d+\.\s/) || trimmedLine.match(/^Q\d+\.\s/) || trimmedLine.match(/^Question\s+\d+\.\s/)) {
+        if (currentQuestion) {
+          questions.push(currentQuestion);
+        }
+        
+        const questionText = trimmedLine.replace(/^\d+\.\s|^Q\d+\.\s|^Question\s+\d+\.\s/, '');
+        currentQuestion = {
+          title: questionText,
+          type: 'multiple_choice',
+          required: true,
+          description: '',
+          options: []
+        };
+      } else if (trimmedLine.match(/^[a-d]\)\s/) || trimmedLine.match(/^[A-D]\.\s/)) {
+        if (currentQuestion) {
+          const optionText = trimmedLine.replace(/^[a-d]\)\s|^[A-D]\.\s/, '');
+          currentQuestion.options.push(optionText);
+        }
+      } else if (trimmedLine && currentQuestion) {
+        if (!currentQuestion.description) {
+          currentQuestion.description = trimmedLine;
+        }
+      }
+    }
+    
+    if (currentQuestion) {
+      questions.push(currentQuestion);
+    }
+    
+    return questions;
   };
 
   const parseCSV = (content) => {
@@ -187,9 +281,12 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
 
   const downloadTemplate = () => {
     let template = '';
+    let filename = '';
+    let mimeType = 'text/plain';
     
     if (uploadMethod === 'csv') {
       template = 'Question,Type,Required,Description,Options\n"What is your name?",text,false,"Optional description",""\n"How satisfied are you?,multiple_choice,true,"Rate your satisfaction","Very Satisfied|Satisfied|Neutral|Dissatisfied|Very Dissatisfied"\n';
+      filename = 'question_template.csv';
     } else if (uploadMethod === 'json') {
       template = JSON.stringify([
         {
@@ -206,15 +303,45 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
           "options": ["Very Satisfied", "Satisfied", "Neutral", "Dissatisfied", "Very Dissatisfied"]
         }
       ], null, 2);
+      filename = 'question_template.json';
+      mimeType = 'application/json';
+    } else if (uploadMethod === 'word') {
+      template = `Quiz Questions Template
+
+1. What is the capital of France?
+a) London
+b) Paris
+c) Berlin
+d) Madrid
+
+2. Which planet is closest to the Sun?
+a) Venus
+b) Earth
+c) Mercury
+d) Mars
+
+3. What is 2 + 2?
+a) 3
+b) 4
+c) 5
+d) 6
+
+Instructions:
+- Number your questions (1., 2., 3., etc.)
+- Use a), b), c), d) for multiple choice options
+- Each question should be on a new line
+- Options should be indented or on separate lines`;
+      filename = 'question_template.txt';
     } else if (uploadMethod === 'bulk') {
       template = 'Q: What is your name?\nMC: How satisfied are you?|Very Satisfied|Satisfied|Neutral|Dissatisfied|Very Dissatisfied\nES: Rate your overall experience\n';
+      filename = 'question_template.txt';
     }
     
-    const blob = new Blob([template], { type: 'text/plain' });
+    const blob = new Blob([template], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `question_template.${uploadMethod === 'json' ? 'json' : 'txt'}`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -239,7 +366,7 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Upload Method
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                 <button
                   onClick={() => setUploadMethod('csv')}
                   className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
@@ -261,6 +388,16 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
                   JSON File
                 </button>
                 <button
+                  onClick={() => setUploadMethod('word')}
+                  className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                    uploadMethod === 'word'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  Word Doc
+                </button>
+                <button
                   onClick={() => setUploadMethod('bulk')}
                   className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
                     uploadMethod === 'bulk'
@@ -276,13 +413,21 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
             {uploadMethod !== 'bulk' ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload File
+                  {uploadMethod === 'csv' ? 'CSV File' : 
+                   uploadMethod === 'json' ? 'JSON File' : 
+                   uploadMethod === 'word' ? 'Word Document' : 'Upload File'}
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  {uploadMethod === 'word' ? (
+                    <File className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  ) : (
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  )}
                   <input
                     type="file"
-                    accept={uploadMethod === 'csv' ? '.csv' : '.json'}
+                    accept={uploadMethod === 'csv' ? '.csv' : 
+                           uploadMethod === 'json' ? '.json' : 
+                           uploadMethod === 'word' ? '.docx,.doc' : '*'}
                     onChange={handleFileChange}
                     className="hidden"
                     id="file-upload"
@@ -295,6 +440,11 @@ const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
                   </label>
                   <p className="text-sm text-gray-500 mt-1">
                     or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {uploadMethod === 'csv' ? 'CSV files only' : 
+                     uploadMethod === 'json' ? 'JSON files only' : 
+                     uploadMethod === 'word' ? 'Word documents (.docx, .doc)' : 'All files'}
                   </p>
                   {file && (
                     <p className="text-sm text-green-600 mt-2">

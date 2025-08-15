@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/connection');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
+const { getClient } = require('../database/connection'); // Added this import for the new_code
 
 // GET /api/surveys - Get all surveys for a user
 router.get('/', auth, async (req, res) => {
@@ -60,14 +61,15 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/surveys - Create a new survey
 router.post('/', auth, async (req, res) => {
+  const client = await getClient();
   try {
     const { title, description, theme, settings, questions } = req.body;
 
     // Start a transaction
-    const client = await query('BEGIN');
+    await client.query('BEGIN');
 
     // Create the survey
-    const surveyResult = await query(
+    const surveyResult = await client.query(
       `INSERT INTO surveys (title, description, user_id, theme, settings)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
@@ -80,7 +82,7 @@ router.post('/', auth, async (req, res) => {
     if (questions && Array.isArray(questions)) {
       for (let i = 0; i < questions.length; i++) {
         const question = questions[i];
-        await query(
+        await client.query(
           `INSERT INTO questions (survey_id, type, title, description, required, options, settings, order_index)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
@@ -97,13 +99,15 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    await query('COMMIT');
+    await client.query('COMMIT');
 
     res.status(201).json(survey);
   } catch (error) {
-    await query('ROLLBACK');
+    await client.query('ROLLBACK');
     console.error('Error creating survey:', error);
     res.status(500).json({ error: 'Failed to create survey' });
+  } finally {
+    client.release();
   }
 });
 

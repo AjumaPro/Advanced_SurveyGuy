@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import SurveyBuilder from './pages/SurveyBuilder';
 import SurveyAnalytics from './pages/SurveyAnalytics';
@@ -9,7 +10,6 @@ import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import AdvancedDashboard from './pages/AdvancedDashboard';
 import AdvancedAnalytics from './pages/AdvancedAnalytics';
 import SurveyResponse from './pages/SurveyResponse';
-import SurveyTemplates from './pages/SurveyTemplates';
 import TemplateEditor from './pages/TemplateEditor';
 import Surveys from './pages/Surveys';
 import SurveyPreview from './pages/SurveyPreview';
@@ -22,6 +22,18 @@ import Team from './pages/Team';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminAccounts from './pages/AdminAccounts';
+import AdminPackages from './pages/AdminPackages';
+import AdminPayments from './pages/AdminPayments';
+import AdminRegister from './pages/AdminRegister';
+import SuperAdminAdmins from './pages/SuperAdminAdmins';
+import TestConnection from './pages/TestConnection';
+import SimpleTest from './pages/SimpleTest';
+import EventManagement from './pages/EventManagement';
+import AdvancedEventManagement from './pages/AdvancedEventManagement';
+import TemplateLibrary from './pages/TemplateLibrary';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -30,7 +42,7 @@ const ProtectedRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner w-8 h-8"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -45,26 +57,41 @@ const PublicRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner w-8 h-8"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
   
-  return user ? <Navigate to="/dashboard" replace /> : children;
+  return user ? <Navigate to="/app/dashboard" replace /> : children;
 };
 
 function AppRoutes() {
   return (
     <Routes>
+      {/* Landing Page (Public) */}
+      <Route path="/" element={<Landing />} />
+      
       {/* Public Routes */}
+      <Route path="/test" element={<TestConnection />} />
+      <Route path="/simple" element={<SimpleTest />} />
       <Route path="/login" element={
         <PublicRoute>
           <Login />
         </PublicRoute>
       } />
+      <Route path="/admin/login" element={
+        <PublicRoute>
+          <AdminLogin />
+        </PublicRoute>
+      } />
       <Route path="/register" element={
         <PublicRoute>
           <Register />
+        </PublicRoute>
+      } />
+      <Route path="/admin/register" element={
+        <PublicRoute>
+          <AdminRegister />
         </PublicRoute>
       } />
       
@@ -76,19 +103,19 @@ function AppRoutes() {
       <Route path="/services" element={<AdvancedServices />} />
       
       {/* Protected Routes */}
-      <Route path="/" element={
+      <Route path="/app" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="advanced-dashboard" element={<AdvancedDashboard />} />
         <Route path="surveys" element={<Surveys />} />
         <Route path="preview/:id" element={<SurveyPreview />} />
-                   <Route path="templates" element={<SurveyTemplates />} />
-           <Route path="templates/:id/edit" element={<TemplateEditor />} />
-           <Route path="builder" element={<SurveyBuilder />} />
+        <Route path="templates/:id/edit" element={<TemplateEditor />} />
+        <Route path="templates/new" element={<TemplateEditor />} />
+        <Route path="builder" element={<SurveyBuilder />} />
            <Route path="builder/:id" element={<SurveyBuilder />} />
            <Route path="publish/:id" element={<PublishSurvey />} />
         <Route path="analytics" element={<AnalyticsDashboard />} />
@@ -98,12 +125,22 @@ function AppRoutes() {
         <Route path="pricing" element={<Pricing />} />
         <Route path="services" element={<AdvancedServices />} />
         <Route path="billing" element={<Billing />} />
-        <Route path="team" element={<Team />} />
-        <Route path="profile" element={<Profile />} />
+                            <Route path="team" element={<Team />} />
+                    <Route path="profile" element={<Profile />} />
+                                          <Route path="events" element={<EventManagement />} />
+                      <Route path="advanced-events" element={<AdvancedEventManagement />} />
+                    <Route path="templates" element={<TemplateLibrary />} />
+        
+        {/* Admin Routes */}
+        <Route path="admin" element={<AdminDashboard />} />
+        <Route path="admin/accounts" element={<AdminAccounts />} />
+        <Route path="admin/packages" element={<AdminPackages />} />
+        <Route path="admin/payments" element={<AdminPayments />} />
+        <Route path="admin/super-admins" element={<SuperAdminAdmins />} />
       </Route>
       
       {/* Catch all route */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

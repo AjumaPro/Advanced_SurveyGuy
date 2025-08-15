@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axios';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import {
@@ -30,7 +30,7 @@ const Surveys = () => {
   const fetchSurveys = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/surveys');
+      const response = await api.get('/surveys');
       setSurveys(response.data);
     } catch (error) {
       console.error('Error fetching surveys:', error);
@@ -44,7 +44,7 @@ const Surveys = () => {
     if (!window.confirm('Are you sure you want to delete this survey?')) return;
     
     try {
-      await axios.delete(`/api/surveys/${surveyId}`);
+      await api.delete(`/surveys/${surveyId}`);
       setSurveys(surveys.filter(s => s.id !== surveyId));
       toast.success('Survey deleted successfully');
     } catch (error) {
@@ -55,7 +55,7 @@ const Surveys = () => {
 
   const duplicateSurvey = async (survey) => {
     try {
-      const response = await axios.post(`/api/surveys/${survey.id}/duplicate`);
+      const response = await api.post(`/surveys/${survey.id}/duplicate`);
       setSurveys([...surveys, response.data]);
       toast.success('Survey duplicated successfully');
     } catch (error) {
@@ -121,14 +121,14 @@ const Surveys = () => {
           </div>
           <div className="flex items-center space-x-3">
             <Link
-              to="/templates"
+              to="/app/templates"
               className="btn-secondary"
             >
               <FileText className="h-5 w-5 mr-2" />
               Use Templates
             </Link>
             <Link
-              to="/builder"
+              to="/app/builder"
               className="btn-primary"
             >
               <Plus className="h-5 w-5 mr-2" />
@@ -322,7 +322,7 @@ const Surveys = () => {
               }
             </p>
             <Link
-              to="/builder"
+              to="/app/builder"
               className="btn-primary"
             >
               <Plus className="h-5 w-5 mr-2" />

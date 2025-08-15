@@ -1,7 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const { auth } = require('../middleware/auth');
 const { query } = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
+
+// GET /api/responses - Get all responses for the authenticated user
+router.get('/', auth, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT r.*, s.title as survey_title FROM responses r
+       JOIN surveys s ON r.survey_id = s.id
+       WHERE s.user_id = $1
+       ORDER BY r.created_at DESC`,
+      [req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching responses:', error);
+    res.status(500).json({ error: 'Failed to fetch responses' });
+  }
+});
 
 // POST /api/responses - Submit survey responses
 router.post('/', async (req, res) => {
