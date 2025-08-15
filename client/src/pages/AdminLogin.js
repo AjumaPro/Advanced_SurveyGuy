@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import {useNavigate, Link} from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {
   Shield,
@@ -20,7 +20,6 @@ import {
   CreditCard,
   FileText
 } from 'lucide-react';
-
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,20 +27,18 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { login, user } = useAuth();
-
+  const { login, } = useAuth();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const result = await login(email, password);
       
       if (result.success) {
         // Wait a moment for the AuthContext to update
         setTimeout(() => {
-          // Check if the logged-in user is an admin
-          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          // Check if the logged-in is an admin
+          const currentUser = JSON.parse(localStorage.getItem('') || '{}');
           if (currentUser.role === 'admin') {
             toast.success('Welcome, Administrator!');
             navigate('/app/admin');
@@ -49,7 +46,7 @@ const AdminLogin = () => {
             toast.error('Access denied. Admin privileges required.');
             // Clear the login data since it's not an admin
             localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            localStorage.removeItem('');
           }
         }, 100);
       }
@@ -60,7 +57,6 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
@@ -72,7 +68,6 @@ const AdminLogin = () => {
           <h2 className="text-3xl font-bold text-white mb-2">Admin Portal</h2>
           <p className="text-gray-300">Secure administrative access</p>
         </div>
-
         {/* Login Form */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -97,7 +92,6 @@ const AdminLogin = () => {
                 />
               </div>
             </div>
-
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
@@ -130,7 +124,6 @@ const AdminLogin = () => {
                 </button>
               </div>
             </div>
-
             {/* Remember Me */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -147,7 +140,6 @@ const AdminLogin = () => {
                 </label>
               </div>
             </div>
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -167,7 +159,6 @@ const AdminLogin = () => {
               )}
             </button>
           </form>
-
           {/* Back to Regular Login */}
           <div className="mt-6 text-center space-y-2">
             <Link
@@ -188,7 +179,6 @@ const AdminLogin = () => {
             </div>
           </div>
         </div>
-
         {/* Admin Features Preview */}
         <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -222,7 +212,6 @@ const AdminLogin = () => {
             </div>
           </div>
         </div>
-
         {/* Security Notice */}
         <div className="text-center">
           <p className="text-xs text-gray-400">
@@ -234,5 +223,4 @@ const AdminLogin = () => {
     </div>
   );
 };
-
 export default AdminLogin; 

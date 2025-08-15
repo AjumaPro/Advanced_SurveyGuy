@@ -8,7 +8,7 @@ const TestConnection = () => {
   const testBackendConnection = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/auth/login');
+      await api.get('/api/health');
       setTestResult('✅ Backend connection successful!');
     } catch (error) {
       setTestResult(`❌ Backend connection failed: ${error.message}`);
@@ -19,7 +19,7 @@ const TestConnection = () => {
   const testRegistration = async () => {
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/register', {
+      await api.post('/api/auth/register', {
         email: `test${Date.now()}@example.com`,
         password: 'test123',
         name: 'Test User'

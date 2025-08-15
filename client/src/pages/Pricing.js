@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Check, Star, Crown, Zap, Users, BarChart3, Shield, Globe, ChevronDown, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +12,7 @@ const Pricing = () => {
   const { isAuthenticated } = useAuth();
 
   // Currency configuration with GH¢ as default (matching billing page)
-  const CURRENCIES = {
+  const CURRENCIES = useMemo(() => ({
     GHS: {
       symbol: 'GH¢',
       name: 'Ghanaian Cedi',
@@ -62,7 +62,7 @@ const Pricing = () => {
       exchangeRate: 2.2, // 1 GHS = 2.2 ZAR (approximate)
       decimalPlaces: 2
     }
-  };
+  }), []);
 
   // Base plans with GHS pricing (matching billing page)
   const basePlans = [

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import {Link, useNavigate} from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
 import { 
   Shield, 
   Lock, 
@@ -21,10 +21,9 @@ import {
   FileText,
   CheckCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import {motion} from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-
 const AdminRegister = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -42,7 +41,6 @@ const AdminRegister = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
@@ -60,40 +58,32 @@ const AdminRegister = () => {
       }));
     }
   };
-
   const validateForm = () => {
     if (!formData.email || !formData.password || !formData.name || !formData.adminKey) {
       toast.error('All fields are required');
       return false;
     }
-
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return false;
     }
-
     if (formData.password.length < 8) {
       toast.error('Password must be at least 8 characters long');
       return false;
     }
-
     if (formData.adminKey !== 'ADMIN2024') {
       toast.error('Invalid admin key');
       return false;
     }
-
     return true;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
-
     setLoading(true);
-
     try {
       const response = await axios.post('/api/auth/admin/register', {
         email: formData.email,
@@ -104,7 +94,6 @@ const AdminRegister = () => {
         permissions: formData.permissions,
         adminKey: formData.adminKey
       });
-
       // Auto-login after successful admin registration
       await login(formData.email, formData.password);
       
@@ -118,7 +107,6 @@ const AdminRegister = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
@@ -130,7 +118,6 @@ const AdminRegister = () => {
           <h2 className="text-3xl font-bold text-white mb-2">Admin Registration</h2>
           <p className="text-gray-300">Create new administrative account</p>
         </div>
-
         {/* Registration Form */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -160,7 +147,6 @@ const AdminRegister = () => {
                 />
               </div>
             </div>
-
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
@@ -182,7 +168,6 @@ const AdminRegister = () => {
                 />
               </div>
             </div>
-
             {/* Department Field */}
             <div>
               <label htmlFor="department" className="block text-sm font-medium text-gray-200 mb-2">
@@ -203,7 +188,6 @@ const AdminRegister = () => {
                 />
               </div>
             </div>
-
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
@@ -236,7 +220,6 @@ const AdminRegister = () => {
                 </button>
               </div>
             </div>
-
             {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200 mb-2">
@@ -269,7 +252,6 @@ const AdminRegister = () => {
                 </button>
               </div>
             </div>
-
             {/* Admin Key Field */}
             <div>
               <label htmlFor="adminKey" className="block text-sm font-medium text-gray-200 mb-2">
@@ -305,7 +287,6 @@ const AdminRegister = () => {
                 Required authorization key for admin account creation
               </p>
             </div>
-
             {/* Permissions Section */}
             <div>
               <label className="block text-sm font-medium text-gray-200 mb-3">
@@ -338,7 +319,6 @@ const AdminRegister = () => {
                 })}
               </div>
             </div>
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -358,7 +338,6 @@ const AdminRegister = () => {
               )}
             </button>
           </form>
-
           {/* Back to Admin Login */}
           <div className="mt-6 text-center">
             <Link
@@ -370,7 +349,6 @@ const AdminRegister = () => {
             </Link>
           </div>
         </motion.div>
-
         {/* Admin Features Preview */}
         <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -404,7 +382,6 @@ const AdminRegister = () => {
             </div>
           </div>
         </div>
-
         {/* Security Notice */}
         <div className="text-center">
           <p className="text-xs text-gray-400">
@@ -416,5 +393,4 @@ const AdminRegister = () => {
     </div>
   );
 };
-
 export default AdminRegister; 

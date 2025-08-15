@@ -14,15 +14,11 @@ import {
   TrendingUp,
   XCircle,
   RefreshCw,
-  Download,
-  AlertCircle,
   Users,
   Globe,
   Shield,
   Zap,
-  Clock,
-  ChevronDown,
-  ChevronUp
+  Clock
 } from 'lucide-react';
 
 const Subscriptions = () => {
@@ -33,7 +29,7 @@ const Subscriptions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('surveys'); // 'surveys', 'payments', 'pending'
-  const [editingSubscription, setEditingSubscription] = useState(null);
+  // Removed unused editingSubscription state
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [preferences, setPreferences] = useState({
@@ -44,7 +40,7 @@ const Subscriptions = () => {
 
   useEffect(() => {
     fetchAllSubscriptions();
-  }, []);
+  }, [fetchAllSubscriptions]);
 
   const fetchAllSubscriptions = useCallback(async () => {
     try {

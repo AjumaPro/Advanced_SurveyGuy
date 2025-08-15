@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
+import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -17,7 +17,6 @@ import {
   FileText,
   BarChart3
 } from 'lucide-react';
-
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +28,6 @@ const AdminDashboard = () => {
   });
   const [recentActions, setRecentActions] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     if (user?.role !== 'admin' && user?.role !== 'super_admin' && !user?.super_admin) {
       navigate('/app/dashboard');
@@ -37,7 +35,6 @@ const AdminDashboard = () => {
     }
     fetchDashboardData();
   }, [user, navigate]);
-
   const fetchDashboardData = async () => {
     try {
       const response = await axios.get('/api/admin/dashboard', {
@@ -52,7 +49,6 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
-
   const getActionIcon = (action) => {
     switch (action) {
       case 'account_approved':
@@ -69,7 +65,6 @@ const AdminDashboard = () => {
         return <Activity className="w-4 h-4" />;
     }
   };
-
   const getActionColor = (action) => {
     if (action.includes('approved') || action.includes('created')) {
       return 'text-green-600 bg-green-100';
@@ -79,7 +74,6 @@ const AdminDashboard = () => {
     }
     return 'text-blue-600 bg-blue-100';
   };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -87,7 +81,6 @@ const AdminDashboard = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -96,7 +89,6 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">Manage your application's users, packages, and payments</p>
         </div>
-
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Pending Accounts */}
@@ -117,7 +109,6 @@ const AdminDashboard = () => {
               Review Accounts →
             </button>
           </div>
-
           {/* Pending Payments */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
@@ -136,7 +127,6 @@ const AdminDashboard = () => {
               Review Payments →
             </button>
           </div>
-
           {/* Total Users */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
@@ -155,7 +145,6 @@ const AdminDashboard = () => {
               View All Users →
             </button>
           </div>
-
           {/* Total Revenue */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
@@ -175,7 +164,6 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
-
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Manage Packages */}
@@ -194,7 +182,6 @@ const AdminDashboard = () => {
               Manage Packages
             </button>
           </div>
-
           {/* User Management */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center mb-4">
@@ -211,7 +198,6 @@ const AdminDashboard = () => {
               Manage Users
             </button>
           </div>
-
           {/* Payment Approvals */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center mb-4">
@@ -229,7 +215,6 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
-
         {/* Recent Admin Actions */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -271,5 +256,4 @@ const AdminDashboard = () => {
     </div>
   );
 };
-
 export default AdminDashboard; 

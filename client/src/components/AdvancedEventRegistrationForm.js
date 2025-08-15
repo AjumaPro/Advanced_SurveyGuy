@@ -43,13 +43,7 @@ const AdvancedEventRegistrationForm = ({
     }));
   };
 
-  const handleCustomFieldChange = (field, value) => {
-    // This function is no longer used, but keeping it for now
-    // setCustomFields(prev => ({
-    //   ...prev,
-    //   [field]: value
-    // }));
-  };
+  // Removed unused handleCustomFieldChange function
 
   const validateStep = (step) => {
     switch (step) {

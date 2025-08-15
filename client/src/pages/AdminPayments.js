@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
+import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -16,7 +16,6 @@ import {
   Eye,
   AlertCircle
 } from 'lucide-react';
-
 const AdminPayments = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +26,6 @@ const AdminPayments = () => {
   const [filters, setFilters] = useState({
     status: ''
   });
-
   useEffect(() => {
     if (user?.role !== 'admin' && user?.role !== 'super_admin' && !user?.super_admin) {
       navigate('/app/dashboard');
@@ -35,7 +33,6 @@ const AdminPayments = () => {
     }
     fetchPayments();
   }, [user, navigate, currentPage, filters]);
-
   const fetchPayments = async () => {
     try {
       const params = new URLSearchParams({
@@ -43,11 +40,9 @@ const AdminPayments = () => {
         limit: 20,
         ...filters
       });
-
       const response = await axios.get(`/api/admin/payments?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-
       setPayments(response.data.payments);
       setTotalPages(response.data.pagination.pages);
     } catch (error) {
@@ -57,7 +52,6 @@ const AdminPayments = () => {
       setLoading(false);
     }
   };
-
   const handleApproval = async (paymentId, action, notes = '') => {
     try {
       await axios.post(`/api/admin/payments/${paymentId}/approve`, {
@@ -66,7 +60,6 @@ const AdminPayments = () => {
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-
       toast.success(`Payment ${action}d successfully`);
       fetchPayments();
     } catch (error) {
@@ -74,7 +67,6 @@ const AdminPayments = () => {
       toast.error(`Failed to ${action} payment`);
     }
   };
-
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: {
@@ -90,9 +82,7 @@ const AdminPayments = () => {
         icon: <XCircle className="w-3 h-3" />
       }
     };
-
     const config = statusConfig[status] || statusConfig.pending;
-
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
         {config.icon}
@@ -100,7 +90,6 @@ const AdminPayments = () => {
       </span>
     );
   };
-
   const formatCurrency = (amount, currency = 'GHS') => {
     const symbols = {
       GHS: '₵',
@@ -109,7 +98,6 @@ const AdminPayments = () => {
     };
     return `${symbols[currency] || ''}${parseFloat(amount).toFixed(2)}`;
   };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -117,7 +105,6 @@ const AdminPayments = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -136,7 +123,6 @@ const AdminPayments = () => {
             </button>
           </div>
         </div>
-
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,7 +142,6 @@ const AdminPayments = () => {
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-
             {/* Clear Filters */}
             <div className="flex items-end">
               <button
@@ -171,7 +156,6 @@ const AdminPayments = () => {
             </div>
           </div>
         </div>
-
         {/* Payments Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -297,7 +281,6 @@ const AdminPayments = () => {
               </tbody>
             </table>
           </div>
-
           {/* Empty State */}
           {payments.length === 0 && (
             <div className="text-center py-12">
@@ -308,7 +291,6 @@ const AdminPayments = () => {
               </p>
             </div>
           )}
-
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200">
@@ -336,7 +318,6 @@ const AdminPayments = () => {
             </div>
           )}
         </div>
-
         {/* Summary Stats */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
@@ -352,7 +333,6 @@ const AdminPayments = () => {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -366,7 +346,6 @@ const AdminPayments = () => {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -385,5 +364,4 @@ const AdminPayments = () => {
     </div>
   );
 };
-
 export default AdminPayments; 

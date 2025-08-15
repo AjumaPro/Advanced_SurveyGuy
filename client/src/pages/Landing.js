@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import {useNavigate} from 'react-router-dom';
+import {motion} from 'framer-motion';
 import {
   BarChart3,
   Users,
@@ -23,10 +23,8 @@ import {
   Target,
   Sparkles
 } from 'lucide-react';
-
 const Landing = () => {
   const navigate = useNavigate();
-
   const features = [
     {
       icon: <BarChart3 className="w-6 h-6" />,
@@ -49,7 +47,6 @@ const Landing = () => {
       description: "Bank-level security with data encryption, GDPR compliance, and secure hosting."
     }
   ];
-
   const testimonials = [
     {
       name: "Sarah Johnson",
@@ -73,14 +70,12 @@ const Landing = () => {
       rating: 5
     }
   ];
-
   const stats = [
     { number: "50K+", label: "Surveys Created" },
     { number: "2M+", label: "Responses Collected" },
     { number: "98%", label: "Customer Satisfaction" },
     { number: "24/7", label: "Support Available" }
   ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
@@ -167,7 +162,6 @@ const Landing = () => {
           </div>
         </div>
       </nav>
-
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="container mx-auto px-6 py-20">
@@ -270,7 +264,6 @@ const Landing = () => {
           </div>
         </div>
       </section>
-
       {/* Stats Section */}
       <section className="bg-white py-16">
         <div className="container mx-auto px-6">
@@ -290,7 +283,6 @@ const Landing = () => {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section id="features" className="py-20">
         <div className="container mx-auto px-6">
@@ -307,7 +299,6 @@ const Landing = () => {
               From simple feedback forms to complex research studies, SurveyGuy provides all the tools you need.
             </p>
           </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
@@ -327,7 +318,6 @@ const Landing = () => {
           </div>
         </div>
       </section>
-
       {/* Templates Preview Section */}
       <section id="templates" className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
@@ -344,7 +334,6 @@ const Landing = () => {
               Choose from hundreds of pre-built templates designed by experts for various industries and purposes.
             </p>
           </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { title: "Customer Satisfaction", icon: <MessageSquare />, color: "from-blue-500 to-blue-600" },
@@ -381,7 +370,6 @@ const Landing = () => {
               </motion.div>
             ))}
           </div>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -404,7 +392,6 @@ const Landing = () => {
           </motion.div>
         </div>
       </section>
-
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
@@ -421,7 +408,6 @@ const Landing = () => {
               See what our customers have to say about their experience with SurveyGuy.
             </p>
           </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <motion.div
@@ -446,7 +432,6 @@ const Landing = () => {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="container mx-auto px-6 text-center">
@@ -493,7 +478,6 @@ const Landing = () => {
           </motion.div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-6">
@@ -698,5 +682,4 @@ const Landing = () => {
     </div>
   );
 };
-
 export default Landing; 

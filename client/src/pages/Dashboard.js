@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import api from '../utils/axios';
-import { useAuth } from '../contexts/AuthContext';
+import {useAuth} from '../contexts/AuthContext';
 import {
   BarChart3,
   Users,
@@ -15,17 +15,14 @@ import {
   Crown,
   CheckCircle
 } from 'lucide-react';
-
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user, subscriptionPlan, subscriptionStatus } = useAuth();
-
+  const {  subscriptionPlan, subscriptionStatus } = useAuth();
   useEffect(() => {
     fetchDashboardData();
   }, []);
-
   const fetchDashboardData = async () => {
     try {
       const response = await api.get('/analytics/dashboard');
@@ -36,7 +33,6 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
-
   const handleNavigation = (path) => {
     try {
       navigate(path);
@@ -45,7 +41,6 @@ const Dashboard = () => {
       window.location.href = path;
     }
   };
-
   const getSubscriptionInfo = () => {
     switch (subscriptionPlan) {
       case 'free':
@@ -95,9 +90,7 @@ const Dashboard = () => {
         };
     }
   };
-
   const subscriptionInfo = getSubscriptionInfo();
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -105,7 +98,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
   const stats = [
     {
       name: 'Total Surveys',
@@ -136,7 +128,6 @@ const Dashboard = () => {
       bgColor: 'bg-yellow-100'
     }
   ];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -162,7 +153,6 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
-
       {/* Subscription Status */}
       <div className={`${subscriptionInfo.bgColor} rounded-lg p-4 border border-gray-200`}>
         <div className="flex items-center justify-between">
@@ -195,7 +185,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
@@ -215,7 +204,6 @@ const Dashboard = () => {
           );
         })}
       </div>
-
       {/* Templates Section for First-time Users */}
       {(dashboardData?.summary?.total_surveys || 0) === 0 && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
@@ -277,7 +265,6 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-
       {/* Recent Activity & Top Surveys */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
@@ -319,7 +306,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-
         {/* Top Performing Surveys */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -368,7 +354,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -414,5 +399,4 @@ const Dashboard = () => {
     </div>
   );
 };
-
 export default Dashboard; 

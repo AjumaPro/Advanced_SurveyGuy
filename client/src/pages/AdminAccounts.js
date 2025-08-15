@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 import {
   Users,
   Search,
-  Filter,
   Mail,
   Calendar,
   Package,
@@ -81,7 +80,7 @@ const AdminAccounts = () => {
 
   useEffect(() => {
     fetchAccounts();
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter, fetchAccounts]);
 
   const handleApproval = async () => {
     try {

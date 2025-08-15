@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import {useParams, useNavigate, Link} from 'react-router-dom';
 import {
   Save,
   ArrowLeft,
@@ -32,20 +32,18 @@ import {
   AlertCircle,
   GripVertical
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {motion, AnimatePresence} from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../utils/axios';
-
 const TemplateEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [template, setTemplate] = useState(null);
+  const [ setTemplate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [ ] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
-
   // Template form state
   const [formData, setFormData] = useState({
     name: '',
@@ -59,7 +57,6 @@ const TemplateEditor = () => {
     targetAudience: '',
     templateType: 'survey'
   });
-
   const categories = [
     { id: 'customer-feedback', name: 'Customer Feedback', icon: <Star className="w-4 h-4" /> },
     { id: 'employee', name: 'Employee', icon: <Users className="w-4 h-4" /> },
@@ -78,7 +75,6 @@ const TemplateEditor = () => {
     { id: 'wellness', name: 'Wellness', icon: <Heart className="w-4 h-4" /> },
     { id: 'conference', name: 'Conference', icon: <Building className="w-4 h-4" /> }
   ];
-
   const icons = [
     { name: 'Star', component: <Star className="w-4 h-4" /> },
     { name: 'Users', component: <Users className="w-4 h-4" /> },
@@ -99,7 +95,6 @@ const TemplateEditor = () => {
     { name: 'Globe', component: <Globe className="w-4 h-4" /> },
     { name: 'Zap', component: <Zap className="w-4 h-4" /> }
   ];
-
   const questionTypes = [
     { id: 'text', name: 'Text Input', icon: <FileText className="w-4 h-4" /> },
     { id: 'multiple-choice', name: 'Multiple Choice', icon: <CheckCircle className="w-4 h-4" /> },
@@ -107,16 +102,14 @@ const TemplateEditor = () => {
     { id: 'yes-no', name: 'Yes/No', icon: <AlertCircle className="w-4 h-4" /> },
     { id: 'emoji-scale', name: 'Emoji Scale', icon: <Star className="w-4 h-4" /> }
   ];
-
   useEffect(() => {
     if (id && id !== 'new') {
       fetchTemplate();
     } else {
-      // New template
+      // New 
       setTemplate({ id: 'new', name: 'New Template', description: '', category: 'customer-feedback' });
     }
-  }, [id]);
-
+  }, [id, fetchTemplate]);
   const fetchTemplate = async () => {
     try {
       setLoading(true);
@@ -136,14 +129,13 @@ const TemplateEditor = () => {
         templateType: templateData.templateType || 'survey'
       });
     } catch (error) {
-      console.error('Error fetching template:', error);
-      toast.error('Failed to load template');
+      console.error('Error fetching :', error);
+      toast.error('Failed to load ');
       navigate('/app/templates');
     } finally {
       setLoading(false);
     }
   };
-
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -152,25 +144,23 @@ const TemplateEditor = () => {
         ...formData,
         questions: formData.questions.map((q, index) => ({ ...q, order: index }))
       };
-
       if (id === 'new') {
-        // Create new template
+        // Create new 
         const response = await api.post('/api/templates', templateData);
         toast.success('Template created successfully!');
         navigate(`/app/templates/${response.data.id}/edit`);
       } else {
-        // Update existing template
+        // Update existing 
         await api.put(`/api/templates/${id}`, templateData);
         toast.success('Template updated successfully!');
       }
     } catch (error) {
-      console.error('Error saving template:', error);
-      toast.error('Failed to save template');
+      console.error('Error saving :', error);
+      toast.error('Failed to save ');
     } finally {
       setSaving(false);
     }
   };
-
   const handleDuplicate = async () => {
     try {
       setSaving(true);
@@ -181,31 +171,28 @@ const TemplateEditor = () => {
       toast.success('Template duplicated successfully');
       navigate('/app/templates');
     } catch (error) {
-      console.error('Error duplicating template:', error);
-      toast.error('Failed to duplicate template');
+      console.error('Error duplicating :', error);
+      toast.error('Failed to duplicate ');
     } finally {
       setSaving(false);
     }
   };
-
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this ? This action cannot be undone.')) {
       return;
     }
-
     try {
       setSaving(true);
       await api.delete(`/api/templates/${id}`);
       toast.success('Template deleted successfully');
       navigate('/app/templates');
     } catch (error) {
-      console.error('Error deleting template:', error);
-      toast.error('Failed to delete template');
+      console.error('Error deleting :', error);
+      toast.error('Failed to delete ');
     } finally {
       setSaving(false);
     }
   };
-
   const addQuestion = (type) => {
     const newQuestion = {
       id: Date.now(),
@@ -221,14 +208,12 @@ const TemplateEditor = () => {
       ] : type === 'rating' ? ['1', '2', '3', '4', '5'] : [],
       settings: {}
     };
-
     setFormData(prev => ({
       ...prev,
       questions: [...prev.questions, newQuestion]
     }));
     setShowQuestionModal(false);
   };
-
   const updateQuestion = (questionId, updates) => {
     setFormData(prev => ({
       ...prev,
@@ -237,14 +222,12 @@ const TemplateEditor = () => {
       )
     }));
   };
-
   const deleteQuestion = (questionId) => {
     setFormData(prev => ({
       ...prev,
       questions: prev.questions.filter(q => q.id !== questionId)
     }));
   };
-
   const duplicateQuestion = (question) => {
     const duplicated = {
       ...question,
@@ -256,7 +239,6 @@ const TemplateEditor = () => {
       questions: [...prev.questions, duplicated]
     }));
   };
-
   const getIconComponent = (iconName) => {
     const iconMap = {
       'Star': <Star className="w-6 h-6" />,
@@ -280,7 +262,6 @@ const TemplateEditor = () => {
     };
     return iconMap[iconName] || <FileText className="w-6 h-6" />;
   };
-
   const renderQuestionEditor = (question) => {
     return (
       <div className="bg-white rounded-lg border p-4 mb-4">
@@ -306,7 +287,6 @@ const TemplateEditor = () => {
             </button>
           </div>
         </div>
-
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -320,7 +300,6 @@ const TemplateEditor = () => {
               placeholder="Enter your question..."
             />
           </div>
-
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2">
               <input
@@ -332,7 +311,6 @@ const TemplateEditor = () => {
               <span className="text-sm text-gray-700">Required</span>
             </label>
           </div>
-
           {(question.type === 'multiple-choice' || question.type === 'rating' || question.type === 'emoji-scale') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -380,18 +358,16 @@ const TemplateEditor = () => {
       </div>
     );
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading template...</p>
+          <p className="mt-4 text-gray-600">Loading ...</p>
         </div>
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
@@ -412,7 +388,7 @@ const TemplateEditor = () => {
                   {id === 'new' ? 'Create New Template' : 'Edit Template'}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {id === 'new' ? 'Design your custom template' : 'Customize your template'}
+                  {id === 'new' ? 'Design your custom ' : 'Customize your '}
                 </p>
               </div>
             </div>
@@ -463,7 +439,6 @@ const TemplateEditor = () => {
             </div>
           </div>
         </motion.div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Template Settings */}
           <div className="lg:col-span-1">
@@ -476,7 +451,6 @@ const TemplateEditor = () => {
                 <Settings className="w-5 h-5" />
                 Template Settings
               </h2>
-
               <div className="space-y-4">
                 {/* Template Name */}
                 <div>
@@ -488,10 +462,9 @@ const TemplateEditor = () => {
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter template name..."
+                    placeholder="Enter name..."
                   />
                 </div>
-
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -502,10 +475,9 @@ const TemplateEditor = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Describe your template..."
+                    placeholder="Describe your ..."
                   />
                 </div>
-
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -523,7 +495,6 @@ const TemplateEditor = () => {
                     ))}
                   </select>
                 </div>
-
                 {/* Icon */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -545,7 +516,6 @@ const TemplateEditor = () => {
                     ))}
                   </div>
                 </div>
-
                 {/* Template Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -561,7 +531,6 @@ const TemplateEditor = () => {
                     <option value="form">Form Template</option>
                   </select>
                 </div>
-
                 {/* Estimated Time */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -575,7 +544,6 @@ const TemplateEditor = () => {
                     placeholder="e.g., 2-3 minutes"
                   />
                 </div>
-
                 {/* Target Audience */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -592,7 +560,6 @@ const TemplateEditor = () => {
               </div>
             </motion.div>
           </div>
-
           {/* Questions Editor */}
           <div className="lg:col-span-2">
             <motion.div
@@ -614,12 +581,11 @@ const TemplateEditor = () => {
                   Add Question
                 </button>
               </div>
-
               {formData.questions.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No questions yet</h3>
-                  <p className="text-gray-600 mb-4">Start building your template by adding questions</p>
+                  <p className="text-gray-600 mb-4">Start building your by adding questions</p>
                   <button
                     onClick={() => setShowQuestionModal(true)}
                     className="btn-primary"
@@ -645,7 +611,6 @@ const TemplateEditor = () => {
             </motion.div>
           </div>
         </div>
-
         {/* Question Type Modal */}
         <AnimatePresence>
           {showQuestionModal && (
@@ -688,5 +653,4 @@ const TemplateEditor = () => {
     </div>
   );
 };
-
 export default TemplateEditor; 

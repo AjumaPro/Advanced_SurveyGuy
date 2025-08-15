@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
+import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import {motion} from 'framer-motion';
 import {
   Package,
   Plus,
@@ -36,7 +36,6 @@ import {
   Activity,
   Layers
 } from 'lucide-react';
-
 const AdminPackages = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -90,7 +89,6 @@ const AdminPackages = () => {
   });
   const [newFeature, setNewFeature] = useState('');
   const [showEnterpriseTemplates, setShowEnterpriseTemplates] = useState(false);
-
   // Enterprise package templates
   const enterpriseTemplates = {
     basic_enterprise: {
@@ -286,7 +284,6 @@ const AdminPackages = () => {
       sla_guarantee: true
     }
   };
-
   // AI Question Generation Templates
   const aiQuestionTemplates = {
     customer_satisfaction: {
@@ -355,7 +352,6 @@ const AdminPackages = () => {
       ai_features: ['Statistical Analysis', 'Correlation Detection', 'Academic Insights']
     }
   };
-
   // AI Survey Suggestions
   const aiSurveySuggestions = {
     question_optimization: {
@@ -403,7 +399,6 @@ const AdminPackages = () => {
       ]
     }
   };
-
   // Check if user is admin or super admin
   useEffect(() => {
     if (user && user.role !== 'admin' && user.role !== 'super_admin' && !user.super_admin) {
@@ -411,7 +406,6 @@ const AdminPackages = () => {
       navigate('/app/dashboard');
     }
   }, [user, navigate]);
-
   const fetchPackages = async () => {
     try {
       setLoading(true);
@@ -424,11 +418,9 @@ const AdminPackages = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchPackages();
   }, []);
-
   const resetForm = () => {
     setFormData({
       name: '',
@@ -466,14 +458,12 @@ const AdminPackages = () => {
     });
     setNewFeature('');
   };
-
   const handleCreatePackage = async () => {
     try {
       if (!formData.name || !formData.price) {
         toast.error('Name and price are required');
         return;
       }
-
       await axios.post('/api/admin/packages', formData);
       toast.success('Package created successfully');
       setShowCreateModal(false);
@@ -484,14 +474,12 @@ const AdminPackages = () => {
       toast.error('Failed to create package');
     }
   };
-
   const handleEditPackage = async () => {
     try {
       if (!formData.name || !formData.price) {
         toast.error('Name and price are required');
         return;
       }
-
       await axios.put(`/api/admin/packages/${selectedPackage.id}`, formData);
       toast.success('Package updated successfully');
       setShowEditModal(false);
@@ -503,12 +491,10 @@ const AdminPackages = () => {
       toast.error('Failed to update package');
     }
   };
-
   const handleDeletePackage = async (packageId) => {
     if (!window.confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
       return;
     }
-
     try {
       await axios.delete(`/api/admin/packages/${packageId}`);
       toast.success('Package deleted successfully');
@@ -522,13 +508,11 @@ const AdminPackages = () => {
       }
     }
   };
-
   const handleBulkAction = async (action) => {
     if (selectedPackages.length === 0) {
       toast.error('Please select packages to perform bulk action');
       return;
     }
-
     try {
       if (action === 'activate') {
         await Promise.all(selectedPackages.map(id => 
@@ -567,7 +551,6 @@ const AdminPackages = () => {
       toast.error('Failed to perform bulk action');
     }
   };
-
   const togglePackageSelection = (packageId) => {
     setSelectedPackages(prev => 
       prev.includes(packageId) 
@@ -575,15 +558,12 @@ const AdminPackages = () => {
         : [...prev, packageId]
     );
   };
-
   const selectAllPackages = () => {
     setSelectedPackages(packages.map(pkg => pkg.id));
   };
-
   const clearSelection = () => {
     setSelectedPackages([]);
   };
-
   // AI-Powered Functions
   const generateAIQuestions = async (template, topic, targetAudience) => {
     try {
@@ -603,7 +583,6 @@ const AdminPackages = () => {
       toast.error('Failed to generate AI questions');
     }
   };
-
   const getAISuggestions = async (surveyType, targetAudience) => {
     try {
       // Simulate AI suggestions
@@ -622,7 +601,6 @@ const AdminPackages = () => {
       toast.error('Failed to get AI suggestions');
     }
   };
-
   const applyAITemplate = (templateKey) => {
     const template = aiQuestionTemplates[templateKey];
     if (template) {
@@ -630,7 +608,6 @@ const AdminPackages = () => {
       toast.success(`${template.name} template applied!`);
     }
   };
-
   const filteredPackages = packages.filter(pkg => {
     const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pkg.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -640,7 +617,6 @@ const AdminPackages = () => {
                          (statusFilter === 'featured' && pkg.is_featured);
     return matchesSearch && matchesStatus;
   });
-
   const openEditModal = (pkg) => {
     setSelectedPackage(pkg);
     setFormData({
@@ -679,7 +655,6 @@ const AdminPackages = () => {
     });
     setShowEditModal(true);
   };
-
   const addFeature = () => {
     if (newFeature.trim()) {
       setFormData({
@@ -689,14 +664,12 @@ const AdminPackages = () => {
       setNewFeature('');
     }
   };
-
   const removeFeature = (index) => {
     setFormData({
       ...formData,
       features: formData.features.filter((_, i) => i !== index)
     });
   };
-
   const applyEnterpriseTemplate = (templateKey) => {
     const template = enterpriseTemplates[templateKey];
     setFormData({
@@ -732,7 +705,6 @@ const AdminPackages = () => {
     setShowEnterpriseTemplates(false);
     setShowCreateModal(true);
   };
-
   const getStatusBadge = (isActive) => {
     if (isActive) {
       return (
@@ -750,7 +722,6 @@ const AdminPackages = () => {
       );
     }
   };
-
   const getFeaturedBadge = (isFeatured) => {
     if (isFeatured) {
       return (
@@ -762,11 +733,9 @@ const AdminPackages = () => {
     }
     return null;
   };
-
   if (user?.role !== 'admin' && user?.role !== 'super_admin' && !user?.super_admin) {
     return null;
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -889,7 +858,6 @@ const AdminPackages = () => {
             </div>
           </div>
         </div>
-
         {/* Package Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -937,7 +905,6 @@ const AdminPackages = () => {
             </div>
           </div>
         </div>
-
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -985,7 +952,6 @@ const AdminPackages = () => {
               </button>
             </div>
           </div>
-
           {/* Bulk Actions Panel */}
           {showBulkActions && (
             <div className="mt-4 pt-4 border-t border-gray-200">
@@ -1048,7 +1014,6 @@ const AdminPackages = () => {
             </div>
           )}
         </div>
-
         {/* Packages Grid */}
         {loading ? (
           <div className="text-center py-12">
@@ -1113,11 +1078,9 @@ const AdminPackages = () => {
                       </button>
                     </div>
                   </div>
-
                   <div className="mb-4">
                     <p className="text-gray-600 text-sm">{pkg.description || 'No description'}</p>
                   </div>
-
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">Price</span>
@@ -1138,7 +1101,6 @@ const AdminPackages = () => {
                       <span className="text-sm font-medium text-gray-900">{pkg.max_responses_per_survey}</span>
                     </div>
                   </div>
-
                   {pkg.features && pkg.features.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-sm font-medium text-gray-900 mb-2">Features</h4>
@@ -1152,7 +1114,6 @@ const AdminPackages = () => {
                       </ul>
                     </div>
                   )}
-
                   {/* Enterprise Features Display */}
                   {pkg.advanced_analytics || pkg.custom_branding || pkg.api_access || pkg.white_label || 
                    pkg.priority_support || pkg.data_export || pkg.team_collaboration || pkg.advanced_security || 
@@ -1219,7 +1180,6 @@ const AdminPackages = () => {
             ))}
           </div>
         )}
-
         {/* Create Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1246,7 +1206,6 @@ const AdminPackages = () => {
             </div>
           </div>
         )}
-
         {/* Edit Modal */}
         {showEditModal && selectedPackage && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1273,7 +1232,6 @@ const AdminPackages = () => {
             </div>
           </div>
         )}
-
         {/* AI Question Templates Modal */}
         {showQuestionTemplates && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1359,7 +1317,6 @@ const AdminPackages = () => {
             </div>
           </div>
         )}
-
         {/* AI Survey Suggestions Modal */}
         {showSurveySuggestions && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1427,7 +1384,6 @@ const AdminPackages = () => {
     </div>
   );
 };
-
 // Package Form Component
 const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeature, removeFeature, onSubmit, onCancel }) => {
   return (
@@ -1501,7 +1457,6 @@ const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeat
           />
         </div>
       </div>
-
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
         <textarea
@@ -1511,7 +1466,6 @@ const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeat
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
         <div className="flex space-x-2 mb-2">
@@ -1546,7 +1500,6 @@ const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeat
           ))}
         </div>
       </div>
-
       {/* Enterprise Features Section */}
       <div className="mb-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Enterprise Features</h3>
@@ -1793,7 +1746,6 @@ const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeat
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="flex items-center">
           <input
@@ -1829,7 +1781,6 @@ const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeat
           />
         </div>
       </div>
-
       <div className="flex justify-end space-x-3">
         <button
           type="button"
@@ -1849,5 +1800,4 @@ const PackageForm = ({ formData, setFormData, newFeature, setNewFeature, addFeat
     </form>
   );
 };
-
 export default AdminPackages; 
