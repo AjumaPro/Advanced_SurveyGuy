@@ -322,6 +322,140 @@ const createTables = async () => {
       ADD COLUMN IF NOT EXISTS super_admin BOOLEAN DEFAULT false
     `);
 
+    // Create analytics tables
+    await query(`
+      CREATE TABLE IF NOT EXISTS survey_analytics (
+        id SERIAL PRIMARY KEY,
+        survey_id INTEGER REFERENCES surveys(id) ON DELETE CASCADE,
+        total_views INTEGER DEFAULT 0,
+        total_responses INTEGER DEFAULT 0,
+        completion_rate DECIMAL(5,2) DEFAULT 0,
+        average_completion_time INTEGER DEFAULT 0,
+        bounce_rate DECIMAL(5,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(survey_id)
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS question_analytics (
+        id SERIAL PRIMARY KEY,
+        question_id INTEGER REFERENCES questions(id) ON DELETE CASCADE,
+        total_responses INTEGER DEFAULT 0,
+        skip_rate DECIMAL(5,2) DEFAULT 0,
+        average_time_spent INTEGER DEFAULT 0,
+        response_distribution JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(question_id)
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS user_activities (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        activity_type VARCHAR(50) NOT NULL,
+        description TEXT,
+        metadata JSONB DEFAULT '{}',
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS survey_sessions (
+        id SERIAL PRIMARY KEY,
+        session_id VARCHAR(255) UNIQUE NOT NULL,
+        survey_id INTEGER REFERENCES surveys(id) ON DELETE CASCADE,
+        respondent_id VARCHAR(255),
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP,
+        is_completed BOOLEAN DEFAULT false,
+        time_spent INTEGER DEFAULT 0,
+        ip_address VARCHAR(45),
+        user_agent TEXT
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS response_analytics (
+        id SERIAL PRIMARY KEY,
+        response_id INTEGER REFERENCES responses(id) ON DELETE CASCADE,
+        time_spent INTEGER DEFAULT 0,
+        is_complete BOOLEAN DEFAULT true,
+        quality_score DECIMAL(3,2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(response_id)
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS dashboard_metrics (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        total_surveys INTEGER DEFAULT 0,
+        total_responses INTEGER DEFAULT 0,
+        total_revenue DECIMAL(10,2) DEFAULT 0,
+        active_subscriptions INTEGER DEFAULT 0,
+        monthly_growth DECIMAL(5,2) DEFAULT 0,
+        date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, date)
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS export_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        export_type VARCHAR(50) NOT NULL,
+        format VARCHAR(10) NOT NULL,
+        file_path VARCHAR(500),
+        file_size INTEGER DEFAULT 0,
+        filters JSONB DEFAULT '{}',
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP
+      )
+    `);
+
+    // Create events tables
+    await query(`
+      CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        event_date TIMESTAMP NOT NULL,
+        location VARCHAR(255),
+        max_attendees INTEGER,
+        registration_required BOOLEAN DEFAULT false,
+        status VARCHAR(50) DEFAULT 'upcoming',
+        settings JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS event_registrations (
+        id SERIAL PRIMARY KEY,
+        event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(50),
+        organization VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'registered',
+        survey_responses JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Update existing payment_subscriptions records to have GHS currency if currency is NULL
     await query(`
       UPDATE payment_subscriptions 
@@ -336,6 +470,10 @@ const createTables = async () => {
       CREATE INDEX IF NOT EXISTS idx_responses_survey_id ON responses(survey_id);
       CREATE INDEX IF NOT EXISTS idx_responses_question_id ON responses(question_id);
       CREATE INDEX IF NOT EXISTS idx_images_user_id ON images(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_activities_user_id ON user_activities(user_id);
+      CREATE INDEX IF NOT EXISTS idx_survey_sessions_survey_id ON survey_sessions(survey_id);
+      CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id);
+      CREATE INDEX IF NOT EXISTS idx_event_registrations_event_id ON event_registrations(event_id);
     `);
 
     console.log('✅ Database tables created successfully!');
@@ -365,16 +503,43 @@ const dropTables = async () => {
   try {
     console.log('🗑️ Dropping all tables...');
     
+    // Drop analytics tables first
+    await query('DROP TABLE IF EXISTS export_logs CASCADE');
+    await query('DROP TABLE IF EXISTS dashboard_metrics CASCADE');
+    await query('DROP TABLE IF EXISTS response_analytics CASCADE');
+    await query('DROP TABLE IF EXISTS survey_sessions CASCADE');
+    await query('DROP TABLE IF EXISTS user_activities CASCADE');
+    await query('DROP TABLE IF EXISTS question_analytics CASCADE');
+    await query('DROP TABLE IF EXISTS survey_analytics CASCADE');
+    
+    // Drop events tables
+    await query('DROP TABLE IF EXISTS event_registrations CASCADE');
+    await query('DROP TABLE IF EXISTS events CASCADE');
+    
+    // Drop admin tables
+    await query('DROP TABLE IF EXISTS admin_management CASCADE');
+    await query('DROP TABLE IF EXISTS account_approvals CASCADE');
+    await query('DROP TABLE IF EXISTS payment_approvals CASCADE');
+    await query('DROP TABLE IF EXISTS subscription_packages CASCADE');
+    await query('DROP TABLE IF EXISTS admin_audit_log CASCADE');
+    
+    // Drop payment and subscription tables
     await query('DROP TABLE IF EXISTS subscription_preferences CASCADE');
     await query('DROP TABLE IF EXISTS subscriptions CASCADE');
     await query('DROP TABLE IF EXISTS payment_subscriptions CASCADE');
     await query('DROP TABLE IF EXISTS payment_intents CASCADE');
     await query('DROP TABLE IF EXISTS pending_payments CASCADE');
+    
+    // Drop survey-related tables
     await query('DROP TABLE IF EXISTS responses CASCADE');
     await query('DROP TABLE IF EXISTS questions CASCADE');
     await query('DROP TABLE IF EXISTS survey_templates CASCADE');
+    await query('DROP TABLE IF EXISTS survey_subcategories CASCADE');
+    await query('DROP TABLE IF EXISTS survey_categories CASCADE');
     await query('DROP TABLE IF EXISTS images CASCADE');
     await query('DROP TABLE IF EXISTS surveys CASCADE');
+    
+    // Drop users table last
     await query('DROP TABLE IF EXISTS users CASCADE');
     
     console.log('✅ All tables dropped successfully!');

@@ -30,12 +30,18 @@ A modern, feature-rich survey platform with drag & drop builder, emoji scales, a
 - **Server**: Node.js with Express
 - **Database**: PostgreSQL for reliable data storage
 - **File Storage**: Firebase for emoji scales and custom assets
+- **Authentication**: JWT-based authentication system
+- **Analytics**: Comprehensive analytics and reporting
+- **Event Management**: Event creation and registration system
+- **Admin Panel**: Full admin management system
 
 ### Analytics Dashboard
 - Real-time response visualization
 - Distribution charts (e.g., 30% gave 9/10)
 - Satisfaction index calculations
 - Export functionality (CSV/PDF)
+- Advanced analytics with user activity tracking
+- Dashboard metrics and performance insights
 
 ## 🛠️ Installation
 
@@ -74,15 +80,20 @@ SurveyGuy/
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
 │   │   ├── pages/         # Page components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── utils/         # Utility functions
-│   │   └── styles/        # CSS and styling
+│   │   ├── contexts/      # React contexts
+│   │   ├── data/          # Static data and templates
+│   │   └── utils/         # Utility functions
 ├── server/                # Node.js backend
 │   ├── routes/            # API routes
-│   ├── controllers/       # Business logic
-│   ├── models/            # Database models
+│   │   ├── auth.js        # Authentication routes
+│   │   ├── surveys.js     # Survey management
+│   │   ├── analytics.js   # Analytics and reporting
+│   │   ├── events.js      # Event management
+│   │   ├── admin.js       # Admin panel
+│   │   └── payments.js    # Payment processing
 │   ├── middleware/        # Express middleware
-│   └── database/          # Database setup and migrations
+│   ├── database/          # Database setup and connection
+│   └── uploads/           # File uploads
 ├── public/                # Static assets
 └── docs/                  # Documentation
 ```
@@ -102,13 +113,18 @@ The platform includes custom emoji scales with:
 - `JWT_SECRET`: JWT token secret
 - `FIREBASE_CONFIG`: Firebase configuration
 - `PORT`: Server port (default: 5000)
+- `PAYSTACK_SECRET_KEY`: Payment processing
+- `FRONTEND_URL`: Frontend URL for CORS
 
 ### Database Schema
-- Users table for authentication
+- Users table for authentication and roles
 - Surveys table for survey metadata
 - Questions table for survey questions
 - Responses table for user responses
-- Images table for custom assets
+- Analytics tables for tracking and metrics
+- Events table for event management
+- Payment tables for subscription management
+- Admin tables for user management
 
 ## 🚀 Deployment
 
@@ -136,13 +152,19 @@ The platform includes custom emoji scales with:
 - [x] Emoji Rating Scales
 - [x] Real-time Analytics
 - [x] Export Functionality
+- [x] Authentication System
+- [x] Survey Templates
+- [x] Event Management
+- [x] Admin Panel
+- [x] Payment Processing
+- [x] Advanced Analytics
 
 ### Optional Features 🔄
-- [ ] Authentication System
-- [ ] Survey Templates
 - [ ] Response Anonymization
 - [ ] Scheduling & Reminders
 - [ ] Embedding Support
+- [ ] Multi-language Support
+- [ ] Advanced Reporting
 
 ## 🤝 Contributing
 
