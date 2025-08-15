@@ -31,6 +31,7 @@ import AdminRegister from './pages/AdminRegister';
 import SuperAdminAdmins from './pages/SuperAdminAdmins';
 import TestConnection from './pages/TestConnection';
 import SimpleTest from './pages/SimpleTest';
+import AuthTest from './pages/AuthTest';
 import EventManagement from './pages/EventManagement';
 import AdvancedEventManagement from './pages/AdvancedEventManagement';
 import TemplateLibrary from './pages/TemplateLibrary';
@@ -74,6 +75,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/test" element={<TestConnection />} />
       <Route path="/simple" element={<SimpleTest />} />
+      <Route path="/auth-test" element={<AuthTest />} />
       <Route path="/login" element={
         <PublicRoute>
           <Login />
