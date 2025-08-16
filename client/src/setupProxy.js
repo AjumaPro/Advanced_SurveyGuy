@@ -8,6 +8,15 @@ module.exports = function(app) {
       changeOrigin: true,
       secure: false,
       logLevel: 'debug',
+      pathRewrite: {
+        '^/api': '/api'
+      },
+      onError: (err, req, res) => {
+        console.log('Proxy error:', err);
+      },
+      onProxyReq: (proxyReq, req, res) => {
+        console.log('Proxying:', req.method, req.url, '→', proxyReq.path);
+      }
     })
   );
 }; 
