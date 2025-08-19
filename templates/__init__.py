@@ -1,1 +1,0 @@
-# Templates app for survey templates 

@@ -32,6 +32,8 @@ import SuperAdminAdmins from './pages/SuperAdminAdmins';
 import TestConnection from './pages/TestConnection';
 import SimpleTest from './pages/SimpleTest';
 import AuthTest from './pages/AuthTest';
+import NetworkTest from './pages/NetworkTest';
+import SimpleNetworkTest from './pages/SimpleNetworkTest';
 import EventManagement from './pages/EventManagement';
 import AdvancedEventManagement from './pages/AdvancedEventManagement';
 import TemplateLibrary from './pages/TemplateLibrary';
@@ -76,6 +78,8 @@ function AppRoutes() {
       <Route path="/test" element={<TestConnection />} />
       <Route path="/simple" element={<SimpleTest />} />
       <Route path="/auth-test" element={<AuthTest />} />
+      <Route path="/network-test" element={<NetworkTest />} />
+      <Route path="/simple-network-test" element={<SimpleNetworkTest />} />
       <Route path="/login" element={
         <PublicRoute>
           <Login />

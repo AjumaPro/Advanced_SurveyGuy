@@ -1,150 +1,273 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../utils/axios';
 
 const AuthTest = () => {
-  const [testResults, setTestResults] = useState([]);
+  const [loginData, setLoginData] = useState({
+    email: 'demo@surveyguy.com',
+    password: 'demo123456'
+  });
+  const [registerData, setRegisterData] = useState({
+    name: 'Test User',
+    email: 'testuser@example.com',
+    password: 'test123456',
+    confirmPassword: 'test123456'
+  });
+  const [loginResult, setLoginResult] = useState('');
+  const [registerResult, setRegisterResult] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login, register, user } = useAuth();
 
-  const addResult = (test, success, message, data = null) => {
-    setTestResults(prev => [...prev, {
-      test,
-      success,
-      message,
-      data,
-      timestamp: new Date().toLocaleTimeString()
-    }]);
-  };
-
-  const testRegistration = async () => {
+  const testLogin = async () => {
     setLoading(true);
+    setLoginResult('Testing login...');
+    
     try {
-      const email = `test${Date.now()}@example.com`;
-      const response = await axios.post('/api/auth/register', {
-        email,
-        password: 'Test123!',
-        name: 'Test User'
-      });
+      console.log('🧪 Testing login with:', loginData);
+      const result = await login(loginData.email, loginData.password);
       
-      addResult('Registration', true, 'User registered successfully', {
-        email,
-        userId: response.data.user.id,
-        token: response.data.token ? 'Token received' : 'No token'
-      });
-      
-      return response.data.token;
+      if (result.success) {
+        setLoginResult(`✅ LOGIN SUCCESS! User: ${result.user?.email || 'Unknown'}`);
+      } else {
+        setLoginResult(`❌ LOGIN FAILED: ${result.error}`);
+      }
     } catch (error) {
-      addResult('Registration', false, error.response?.data?.error || error.message);
-      return null;
+      console.error('❌ Login test error:', error);
+      setLoginResult(`❌ LOGIN ERROR: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const testLogin = async (email, password) => {
+  const testRegister = async () => {
     setLoading(true);
+    setRegisterResult('Testing registration...');
+    
     try {
-      const response = await axios.post('/api/auth/login', {
-        email,
-        password
-      });
+      console.log('🧪 Testing registration with:', registerData);
+      const result = await register(registerData.email, registerData.password, registerData.name);
       
-      addResult('Login', true, 'User logged in successfully', {
-        email,
-        userId: response.data.user.id,
-        role: response.data.user.role,
-        token: response.data.token ? 'Token received' : 'No token'
-      });
-      
-      return response.data.token;
+      if (result.success) {
+        setRegisterResult(`✅ REGISTRATION SUCCESS! User: ${result.user?.email || 'Unknown'}`);
+      } else {
+        setRegisterResult(`❌ REGISTRATION FAILED: ${result.error}`);
+      }
     } catch (error) {
-      addResult('Login', false, error.response?.data?.error || error.message);
-      return null;
+      console.error('❌ Registration test error:', error);
+      setRegisterResult(`❌ REGISTRATION ERROR: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const testAuth = async (token) => {
-    if (!token) return;
-    
+  const testDirectAPI = async () => {
     setLoading(true);
+    setLoginResult('Testing direct API...');
+    
     try {
-      const response = await axios.get('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
+      console.log('🧪 Testing direct API call...');
+      const response = await api.post('/auth/login', {
+        email: 'demo@surveyguy.com',
+        password: 'demo123456'
       });
       
-      addResult('Auth Check', true, 'Authentication working', {
-        user: response.data.user
-      });
+      console.log('✅ Direct API response:', response.data);
+      setLoginResult(`✅ DIRECT API SUCCESS! User: ${response.data.user.email}`);
     } catch (error) {
-      addResult('Auth Check', false, error.response?.data?.error || error.message);
+      console.error('❌ Direct API error:', error);
+      setLoginResult(`❌ DIRECT API ERROR: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const runAllTests = async () => {
-    setTestResults([]);
-    
-    // Test registration
-    const token = await testRegistration();
-    
-    // Test login with the registered user
-    if (token) {
-      const email = `test${Date.now() - 1}@example.com`; // Use the email from registration
-      await testLogin(email, 'Test123!');
-    }
-    
-    // Test existing user login
-    await testLogin('newuser@example.com', 'Test123!');
+  const clearResults = () => {
+    setLoginResult('');
+    setRegisterResult('');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Authentication Test</h1>
-        
-        <div className="mb-6">
-          <button
-            onClick={runAllTests}
-            disabled={loading}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Running Tests...' : 'Run All Tests'}
-          </button>
-        </div>
-        
-        <div className="space-y-4">
-          {testResults.map((result, index) => (
-            <div
-              key={index}
-              className={`p-4 rounded-lg border ${
-                result.success 
-                  ? 'bg-green-50 border-green-200 text-green-800' 
-                  : 'bg-red-50 border-red-200 text-red-800'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{result.test}</h3>
-                  <p className="text-sm">{result.message}</p>
-                  {result.data && (
-                    <pre className="text-xs mt-2 bg-gray-100 p-2 rounded">
-                      {JSON.stringify(result.data, null, 2)}
-                    </pre>
-                  )}
-                </div>
-                <div className="text-xs text-gray-500">{result.timestamp}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {testResults.length === 0 && (
-          <div className="text-center text-gray-500 py-8">
-            Click "Run All Tests" to test authentication
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '800px', margin: '0 auto' }}>
+      <h1>🔐 Authentication Test Page</h1>
+      
+      <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f0f8ff', borderRadius: '8px' }}>
+        <h3>Current Status:</h3>
+        <p><strong>API URL:</strong> {api.defaults.baseURL}</p>
+        <p><strong>Current User:</strong> {user ? `${user.email} (ID: ${user.id})` : 'Not logged in'}</p>
+        <p><strong>Token:</strong> {localStorage.getItem('token') ? 'Present' : 'Not found'}</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        {/* Login Test */}
+        <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
+          <h2>🔑 Login Test</h2>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+            <input
+              type="email"
+              value={loginData.email}
+              onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            />
           </div>
-        )}
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+            <input
+              type="password"
+              value={loginData.password}
+              onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            />
+          </div>
+          
+          <button
+            onClick={testLogin}
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              backgroundColor: loading ? '#ccc' : '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginBottom: '10px'
+            }}
+          >
+            {loading ? 'Testing...' : 'Test Login'}
+          </button>
+          
+          <button
+            onClick={testDirectAPI}
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              backgroundColor: loading ? '#ccc' : '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Testing...' : 'Test Direct API'}
+          </button>
+          
+          {loginResult && (
+            <div style={{
+              marginTop: '15px',
+              padding: '10px',
+              backgroundColor: loginResult.includes('SUCCESS') ? '#d4edda' : '#f8d7da',
+              border: `1px solid ${loginResult.includes('SUCCESS') ? '#c3e6cb' : '#f5c6cb'}`,
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}>
+              <strong>Result:</strong> {loginResult}
+            </div>
+          )}
+        </div>
+
+        {/* Registration Test */}
+        <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
+          <h2>📝 Registration Test</h2>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
+            <input
+              type="text"
+              value={registerData.name}
+              onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+            <input
+              type="email"
+              value={registerData.email}
+              onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+            <input
+              type="password"
+              value={registerData.password}
+              onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Confirm Password:</label>
+            <input
+              type="password"
+              value={registerData.confirmPassword}
+              onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+            />
+          </div>
+          
+          <button
+            onClick={testRegister}
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              backgroundColor: loading ? '#ccc' : '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Testing...' : 'Test Registration'}
+          </button>
+          
+          {registerResult && (
+            <div style={{
+              marginTop: '15px',
+              padding: '10px',
+              backgroundColor: registerResult.includes('SUCCESS') ? '#d4edda' : '#f8d7da',
+              border: `1px solid ${registerResult.includes('SUCCESS') ? '#c3e6cb' : '#f5c6cb'}`,
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}>
+              <strong>Result:</strong> {registerResult}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        <button
+          onClick={clearResults}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Clear Results
+        </button>
+      </div>
+
+      <div style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
+        <p><strong>Instructions:</strong></p>
+        <ul>
+          <li>Use the login test with the demo account: demo@surveyguy.com / demo123456</li>
+          <li>Use the registration test with a new email address</li>
+          <li>Check browser console (F12) for detailed logs</li>
+          <li>The "Test Direct API" button bypasses the AuthContext for direct testing</li>
+        </ul>
       </div>
     </div>
   );

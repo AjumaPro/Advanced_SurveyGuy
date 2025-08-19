@@ -28,9 +28,9 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
-    'django_extensions',
     
     # Local apps
     'accounts',
@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'analytics',
     'events',
     'payments',
-    'templates',
 ]
 
 MIDDLEWARE = [
@@ -151,11 +150,29 @@ SIMPLE_JWT = {
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:3000",  # React development server
     "http://127.0.0.1:3000",
+    "http://localhost:3001",  # React development server (alternative port)
+    "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:3003",  # React development server (new port)
+    "http://127.0.0.1:3003",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

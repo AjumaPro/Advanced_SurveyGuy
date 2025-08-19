@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/axios';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
@@ -15,115 +15,144 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
 
-  // Configure api defaults
   useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete api.defaults.headers.common['Authorization'];
-    }
-  }, [token]);
+    checkAuthStatus();
+  }, []);
 
-  // Check if user is authenticated on app load
-  useEffect(() => {
-    const checkAuth = async () => {
+  const checkAuthStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
       if (token) {
-        try {
-          const response = await api.get('/api/auth/me');
-          const userData = response.data.user;
-          localStorage.setItem('user', JSON.stringify(userData));
-          setUser(userData);
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setToken(null);
-          setUser(null);
-        }
-      } else {
-        // Try to load user from localStorage if no token
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch (error) {
-            console.error('Failed to parse stored user:', error);
-            localStorage.removeItem('user');
-          }
-        }
+        console.log('🔍 Checking auth status...');
+        const response = await api.get('/auth/me');
+        console.log('✅ Auth status check successful:', response.data);
+        setUser(response.data.user);
       }
+    } catch (error) {
+      console.error('❌ Auth status check failed:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } finally {
       setLoading(false);
-    };
-
-    checkAuth();
-  }, [token]);
+    }
+  };
 
   const login = async (email, password) => {
+    console.log('🔐 Attempting login with:', { email, password });
     try {
-      const response = await api.post('/api/auth/login', { email, password });
-      const { user, token } = response.data;
+      console.log('📡 Making login API call...');
+      const response = await api.post('/auth/login', { email, password });
+      console.log('✅ Login API response:', response.data);
+      
+      const { token, user } = response.data;
+      
+      if (!token || !user) {
+        console.error('❌ Missing token or user in response');
+        return { success: false, error: 'Invalid response from server' };
+      }
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      setToken(token);
       setUser(user);
       
       toast.success('Welcome back!');
+      console.log('🎉 Login successful!');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.error || 'Login failed';
+      console.error('❌ Login error:', error);
+      console.error('🔍 Error response:', error.response?.data);
+      console.error('📊 Error status:', error.response?.status);
+      
+      // Handle different error response formats
+      let message = 'Login failed';
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.response?.data?.detail) {
+        message = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      
       toast.error(message);
       return { success: false, error: message };
     }
   };
 
   const register = async (email, password, name) => {
+    console.log('🔐 Attempting registration with:', { email, name });
     try {
-      const response = await api.post('/api/auth/register', { email, password, name });
-      const { user, token, message } = response.data;
+      console.log('📡 Making registration API call...');
+      const response = await api.post('/auth/register', { 
+        email, 
+        password, 
+        name 
+      });
+      console.log('✅ Registration API response:', response.data);
+      
+      const { token, user } = response.data;
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      setToken(token);
       setUser(user);
       
-      // Show success message with subscription info
-      toast.success(message || 'Account created successfully!');
-      
-      // Show additional info about free subscription
-      if (user.subscription_plan === 'free') {
-        toast.success('You now have access to the Free Plan with 3 surveys and 50 responses per survey!', {
-          duration: 6000,
-        });
-      }
-      
+      toast.success('Account created successfully!');
+      console.log('🎉 Registration successful!');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.error || 'Registration failed';
+      console.error('❌ Registration error:', error);
+      console.error('🔍 Error response:', error.response?.data);
+      console.error('📊 Error status:', error.response?.status);
+      
+      // Handle different error response formats
+      let message = 'Registration failed';
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.response?.data?.detail) {
+        message = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      
       toast.error(message);
       return { success: false, error: message };
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    toast.success('Logged out successfully');
+  const logout = async () => {
+    try {
+      console.log('🚪 Attempting logout...');
+      await api.post('/auth/logout');
+      console.log('✅ Logout API call successful');
+    } catch (error) {
+      console.error('❌ Logout API error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      toast.success('Logged out successfully');
+      console.log('🎉 Logout completed');
+    }
   };
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await api.put('/api/auth/profile', profileData);
+      console.log('📝 Updating profile...');
+      const response = await api.put('/auth/profile', profileData);
+      console.log('✅ Profile update successful:', response.data);
+      
       const updatedUser = response.data.user;
-      localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      toast.success('Profile updated successfully');
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      toast.success('Profile updated successfully!');
       return { success: true };
     } catch (error) {
+      console.error('❌ Profile update error:', error);
       const message = error.response?.data?.error || 'Profile update failed';
       toast.error(message);
       return { success: false, error: message };
@@ -132,10 +161,17 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      await api.post('/api/auth/change-password', { currentPassword, newPassword });
-      toast.success('Password changed successfully');
+      console.log('🔐 Changing password...');
+      await api.put('/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword
+      });
+      console.log('✅ Password change successful');
+      
+      toast.success('Password changed successfully!');
       return { success: true };
     } catch (error) {
+      console.error('❌ Password change error:', error);
       const message = error.response?.data?.error || 'Password change failed';
       toast.error(message);
       return { success: false, error: message };
@@ -150,9 +186,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
-    isAuthenticated: !!user,
-    subscriptionPlan: user?.subscription_plan || 'free',
-    subscriptionStatus: user?.subscription_status || 'active'
+    checkAuthStatus
   };
 
   return (

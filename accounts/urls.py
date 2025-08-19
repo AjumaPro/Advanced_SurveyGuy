@@ -1,22 +1,18 @@
 from django.urls import path
-from . import views
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+from .api_views import login_api, register_api, me_api, logout_api
 
 urlpatterns = [
-    # Authentication endpoints
-    path('register/', views.UserRegistrationView.as_view(), name='register'),
-    path('login/', views.UserLoginView.as_view(), name='login'),
-    path('logout/', views.UserLogoutView.as_view(), name='logout'),
-    path('current-user/', views.current_user, name='current_user'),
+    # JWT Token endpoints
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
-    # Profile management
-    path('profile/', views.UserProfileView.as_view(), name='profile'),
-    path('change-password/', views.PasswordChangeView.as_view(), name='change_password'),
-    
-    # Admin endpoints
-    path('admin/users/', views.AdminUserListView.as_view(), name='admin_users'),
-    path('admin/users/<int:pk>/', views.AdminUserDetailView.as_view(), name='admin_user_detail'),
-    path('admin/create-admin/', views.create_admin_user, name='create_admin'),
-    
-    # Activity tracking
-    path('activities/', views.UserActivityListView.as_view(), name='user_activities'),
+    # React API endpoints
+    path('login/', login_api, name='api_login'),
+    path('register/', register_api, name='api_register'),
+    path('me/', me_api, name='api_me'),
+    path('logout/', logout_api, name='api_logout'),
 ] 

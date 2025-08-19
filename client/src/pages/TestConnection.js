@@ -5,68 +5,74 @@ const TestConnection = () => {
   const [testResult, setTestResult] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const testBackendConnection = async () => {
+  const testLogin = async () => {
     setLoading(true);
+    setTestResult('Testing login...');
+    
     try {
-      await api.get('/api/health');
-      setTestResult('✅ Backend connection successful!');
+      console.log('🧪 Starting login test...');
+      const response = await api.post('/auth/login', {
+        email: 'demo@surveyguy.com',
+        password: 'demo123456'
+      });
+      
+      console.log('✅ Test successful:', response.data);
+      setTestResult(`✅ Login successful! User: ${response.data.user.email}`);
     } catch (error) {
-      setTestResult(`❌ Backend connection failed: ${error.message}`);
+      console.error('❌ Test failed:', error);
+      setTestResult(`❌ Login failed: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const testRegistration = async () => {
+  const testHealth = async () => {
     setLoading(true);
+    setTestResult('Testing health endpoint...');
+    
     try {
-      await api.post('/api/auth/register', {
-        email: `test${Date.now()}@example.com`,
-        password: 'test123',
-        name: 'Test User'
-      });
-      setTestResult('✅ Registration API working!');
+      const response = await api.get('/health');
+      setTestResult(`✅ Health check successful: ${JSON.stringify(response.data)}`);
     } catch (error) {
-      setTestResult(`❌ Registration failed: ${error.response?.data?.error || error.message}`);
+      setTestResult(`❌ Health check failed: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">API Connection Test</h2>
-          <p className="mt-2 text-gray-600">Testing SurveyGuy backend connectivity</p>
-        </div>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 className="text-2xl font-bold mb-6 text-center">API Connection Test</h1>
         
         <div className="space-y-4">
           <button
-            onClick={testBackendConnection}
+            onClick={testHealth}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-50"
           >
-            {loading ? 'Testing...' : 'Test Backend Connection'}
+            Test Health Endpoint
           </button>
           
           <button
-            onClick={testRegistration}
+            onClick={testLogin}
             disabled={loading}
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50"
+            className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 disabled:opacity-50"
           >
-            {loading ? 'Testing...' : 'Test Registration API'}
+            Test Login API
           </button>
         </div>
         
         {testResult && (
-          <div className="mt-4 p-4 bg-gray-100 rounded-md">
-            <p className="text-sm">{testResult}</p>
+          <div className="mt-6 p-4 bg-gray-100 rounded">
+            <h3 className="font-semibold mb-2">Test Result:</h3>
+            <pre className="text-sm whitespace-pre-wrap">{testResult}</pre>
           </div>
         )}
         
-        <div className="text-center">
-          <a href="/login" className="text-blue-600 hover:text-blue-500">
-            Go to Login Page
-          </a>
+        <div className="mt-6 text-sm text-gray-600">
+          <p><strong>Current API URL:</strong> {api.defaults.baseURL}</p>
+          <p><strong>Check browser console</strong> for detailed logs</p>
         </div>
       </div>
     </div>
