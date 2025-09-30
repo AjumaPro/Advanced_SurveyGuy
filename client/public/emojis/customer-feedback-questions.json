@@ -1,0 +1,286 @@
+{
+  "questionSets": {
+    "banking-customer-feedback": {
+      "name": "Banking Customer Feedback Survey",
+      "description": "Complete customer feedback survey with satisfaction, likelihood, and ease questions",
+      "questions": [
+        {
+          "id": "satisfaction-experience",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with the experience you received at Platinum Banking?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point",
+          "settings": {
+            "allowComments": true,
+            "showLabels": true,
+            "showValues": true
+          }
+        },
+        {
+          "id": "likelihood-recommend",
+          "type": "emoji_scale",
+          "title": "Based on your experience at Platinum Banking, how likely are you to recommend us to your friends and colleagues?",
+          "required": true,
+          "emojiSet": "likelihood-recommendation",
+          "scale": "10-point",
+          "settings": {
+            "allowComments": false,
+            "showLabels": true,
+            "showValues": true,
+            "rangeLabels": {
+              "1-6": "Unlikely",
+              "7-8": "Neutral", 
+              "9-10": "Likely"
+            }
+          }
+        },
+        {
+          "id": "ease-interaction",
+          "type": "emoji_scale",
+          "title": "How easy was it to interact with us?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point",
+          "settings": {
+            "allowComments": true,
+            "showLabels": true,
+            "showValues": true
+          }
+        },
+        {
+          "id": "comments",
+          "type": "text",
+          "title": "We would love to hear from you, please provide your comments. (Optional)",
+          "required": false,
+          "settings": {
+            "multiline": true,
+            "maxLength": 1000,
+            "placeholder": "We would love to hear from you, please provide your comments. (Optional)"
+          }
+        },
+        {
+          "id": "phone-number",
+          "type": "text",
+          "title": "Phone Number (Optional)",
+          "required": false,
+          "settings": {
+            "inputType": "tel",
+            "placeholder": "+233",
+            "showCountryFlag": true,
+            "countryCode": "GH"
+          }
+        }
+      ]
+    },
+    "restaurant-feedback": {
+      "name": "Restaurant Customer Feedback",
+      "description": "Restaurant dining experience feedback survey",
+      "questions": [
+        {
+          "id": "food-quality",
+          "type": "emoji_scale",
+          "title": "How would you rate the quality of our food?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "service-quality",
+          "type": "emoji_scale",
+          "title": "How would you rate our service?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "recommend-restaurant",
+          "type": "emoji_scale",
+          "title": "How likely are you to recommend our restaurant to others?",
+          "required": true,
+          "emojiSet": "likelihood-recommendation",
+          "scale": "10-point"
+        },
+        {
+          "id": "atmosphere",
+          "type": "emoji_scale",
+          "title": "How would you rate our restaurant atmosphere?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        }
+      ]
+    },
+    "retail-shopping-feedback": {
+      "name": "Retail Shopping Experience",
+      "description": "Retail store shopping experience feedback",
+      "questions": [
+        {
+          "id": "product-quality",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with the product quality?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "staff-helpfulness",
+          "type": "emoji_scale",
+          "title": "How easy was it to get help from our staff?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "store-layout",
+          "type": "emoji_scale",
+          "title": "How easy was it to find what you were looking for?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "overall-shopping",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with your overall shopping experience?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        }
+      ]
+    },
+    "online-service-feedback": {
+      "name": "Online Service Experience",
+      "description": "Digital service and website experience feedback",
+      "questions": [
+        {
+          "id": "website-usability",
+          "type": "emoji_scale",
+          "title": "How easy was it to use our website?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "service-quality",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with our online service?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "recommend-service",
+          "type": "emoji_scale",
+          "title": "How likely are you to recommend our service to others?",
+          "required": true,
+          "emojiSet": "likelihood-recommendation",
+          "scale": "10-point"
+        },
+        {
+          "id": "customer-support",
+          "type": "emoji_scale",
+          "title": "How easy was it to get customer support when needed?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point"
+        }
+      ]
+    },
+    "hotel-stay-feedback": {
+      "name": "Hotel Stay Experience",
+      "description": "Hotel accommodation and service feedback",
+      "questions": [
+        {
+          "id": "room-quality",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with your room?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "staff-service",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with our staff service?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "check-in-process",
+          "type": "emoji_scale",
+          "title": "How easy was the check-in process?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point"
+        },
+        {
+          "id": "recommend-hotel",
+          "type": "emoji_scale",
+          "title": "How likely are you to recommend our hotel to others?",
+          "required": true,
+          "emojiSet": "likelihood-recommendation",
+          "scale": "10-point"
+        }
+      ]
+    }
+  },
+  "quickQuestions": {
+    "single-satisfaction": {
+      "name": "Quick Satisfaction Check",
+      "description": "Single satisfaction question for quick feedback",
+      "questions": [
+        {
+          "id": "quick-satisfaction",
+          "type": "emoji_scale",
+          "title": "How satisfied are you with our service?",
+          "required": true,
+          "emojiSet": "customer-satisfaction",
+          "scale": "5-point"
+        }
+      ]
+    },
+    "single-recommendation": {
+      "name": "Quick Recommendation Check",
+      "description": "Single likelihood to recommend question",
+      "questions": [
+        {
+          "id": "quick-recommend",
+          "type": "emoji_scale",
+          "title": "How likely are you to recommend us to others?",
+          "required": true,
+          "emojiSet": "likelihood-recommendation",
+          "scale": "10-point"
+        }
+      ]
+    },
+    "single-ease": {
+      "name": "Quick Ease Check",
+      "description": "Single ease of use question",
+      "questions": [
+        {
+          "id": "quick-ease",
+          "type": "emoji_scale",
+          "title": "How easy was it to complete your task?",
+          "required": true,
+          "emojiSet": "ease-of-interaction",
+          "scale": "5-point"
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

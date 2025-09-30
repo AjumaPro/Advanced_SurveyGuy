@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import EmojiScale from '../components/EmojiScale';
 import SubscriptionForm from '../components/SubscriptionForm';
+import MatrixQuestion from '../components/MatrixQuestion';
 
 const SurveyResponse = () => {
   const { id } = useParams();
@@ -23,18 +24,31 @@ const SurveyResponse = () => {
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [sessionId] = useState(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [startTime] = useState(new Date());
 
   const fetchSurvey = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/surveys/public/${id}`);
-      setSurvey(response.data);
+      
+      // Fetch published survey using new API
+      const response = await api.responses.getPublicSurvey(id);
+      
+      if (response.error) {
+        console.error('Error fetching survey:', response.error);
+        toast.error('Survey not found or not available');
+        return;
+      }
+
+      setSurvey(response.survey);
       
       // Initialize responses object
       const initialResponses = {};
-      response.data.questions.forEach(question => {
-        initialResponses[question.id] = null;
-      });
+      if (response.survey.questions) {
+        response.survey.questions.forEach(question => {
+          initialResponses[question.id] = null;
+        });
+      }
       setResponses(initialResponses);
     } catch (error) {
       console.error('Error fetching survey:', error);
@@ -53,6 +67,15 @@ const SurveyResponse = () => {
       ...prev,
       [questionId]: answer
     }));
+    
+    // Clear validation error for this question
+    if (validationErrors[questionId]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[questionId];
+        return newErrors;
+      });
+    }
   };
 
   const nextQuestion = () => {
@@ -70,25 +93,113 @@ const SurveyResponse = () => {
   const submitSurvey = async () => {
     try {
       setSubmitting(true);
+      setValidationErrors({});
       
-      const surveyResponses = Object.entries(responses)
-        .filter(([_, answer]) => answer !== null)
-        .map(([questionId, answer]) => ({
-          questionId: parseInt(questionId),
-          answer
-        }));
-
-      await axios.post('/api/responses', {
-        surveyId: parseInt(id),
-        responses: surveyResponses,
-        sessionId
+      console.log('🚀 Starting survey submission...');
+      console.log('Survey ID:', id);
+      console.log('Responses:', responses);
+      
+      // Validate responses before submission
+      const validation = api.responses.validateResponse(survey, responses);
+      
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+        toast.error('Please complete all required questions');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Calculate completion time
+      const completionTime = Math.round((new Date() - startTime) / 1000); // seconds
+      
+      console.log('📝 Validation passed, attempting submission...');
+      
+      // EMERGENCY BYPASS: Try direct Supabase insertion first
+      try {
+        console.log('🛠️ Trying emergency direct submission...');
+        const { supabase } = await import('../lib/supabase');
+        
+        const directSubmission = {
+          survey_id: id,
+          responses: responses,
+          session_id: sessionId,
+          submitted_at: new Date().toISOString(),
+          completion_time: completionTime,
+          user_agent: navigator.userAgent
+        };
+        
+        console.log('📋 Direct submission data:', directSubmission);
+        
+        const { data: directResult, error: directError } = await supabase
+          .from('survey_responses')
+          .insert(directSubmission)
+          .select()
+          .single();
+          
+        if (!directError && directResult) {
+          console.log('✅ Emergency direct submission successful!', directResult);
+          
+          // Update analytics after successful direct submission
+          try {
+            await api.responses.updateAnalyticsOnResponse(id, directResult);
+          } catch (analyticsError) {
+            console.warn('⚠️ Analytics update failed (non-critical):', analyticsError);
+          }
+          
+          toast.success('Thank you for your responses!');
+          setCompleted(true);
+          return;
+        } else {
+          console.warn('⚠️ Direct submission failed:', directError);
+        }
+      } catch (directSubmissionError) {
+        console.warn('⚠️ Direct submission exception:', directSubmissionError);
+      }
+      
+      // Fallback to API method
+      console.log('🔄 Falling back to API method...');
+      const response = await api.responses.submitResponse(id, {
+        responses: responses,
+        sessionId: sessionId,
+        email: responses.email || null,
+        completionTime: completionTime,
+        userAgent: navigator.userAgent
       });
 
+      if (response.error) {
+        console.error('❌ API submission failed:', response.error);
+        
+        // FINAL FALLBACK: Store in localStorage
+        console.log('💾 Storing in localStorage as final fallback...');
+        const backupKey = `survey_response_${id}_${Date.now()}`;
+        const backupData = {
+          surveyId: id,
+          responses: responses,
+          sessionId: sessionId,
+          completionTime: completionTime,
+          timestamp: new Date().toISOString(),
+          status: 'pending_submission'
+        };
+        
+        try {
+          localStorage.setItem(backupKey, JSON.stringify(backupData));
+          toast.success('Your responses have been saved locally. We will try to submit them later.');
+          setCompleted(true);
+          console.log('💾 Responses backed up to localStorage:', backupKey);
+          return;
+        } catch (storageError) {
+          console.error('❌ localStorage backup failed:', storageError);
+          toast.error('Failed to submit survey. Please try again.');
+          return;
+        }
+      }
+
+      console.log('✅ API submission successful!', response);
       toast.success('Thank you for your responses!');
       setCompleted(true);
     } catch (error) {
-      console.error('Error submitting responses:', error);
-      toast.error('Failed to submit responses');
+      console.error('💥 Complete submission failure:', error);
+      toast.error('Failed to submit responses. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -185,45 +296,85 @@ const SurveyResponse = () => {
     switch (question.type) {
       case 'short_answer':
       case 'text':
+      case 'short_text':
+      case 'single_line':
         return (
-          <input
-            type="text"
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Your answer"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+              placeholder="Your answer"
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
         );
 
       case 'paragraph':
+      case 'long_text':
+      case 'textarea':
+      case 'multi_line':
+      case 'essay':
+      case 'description':
         return (
-          <textarea
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            rows="4"
-            placeholder="Your answer"
-          />
+          <div className="relative">
+            <textarea
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+              rows="4"
+              placeholder="Your answer"
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-3 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
         );
 
       case 'multiple_choice':
+      case 'radio':
+      case 'single_choice':
+      case 'choice':
         return (
           <div className="space-y-3">
-            {question.options.map((option, index) => {
+            {(question.options || []).map((option, index) => {
               const optionValue = typeof option === 'object' ? option.value || option.label : option;
               const optionLabel = typeof option === 'object' ? option.label || option.value : option;
+              const isSelected = currentResponse === optionValue;
               
               return (
-                <label key={index} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg">
-                  <input
-                    type="radio"
-                    name={`question-${question.id}`}
-                    value={optionValue}
-                    checked={currentResponse === optionValue}
-                    onChange={(e) => handleResponse(question.id, e.target.value)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="flex-1 text-gray-700">{optionLabel}</span>
+                <label key={index} className={`flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg border-2 transition-all duration-200 ${
+                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  <div className="relative">
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      value={optionValue}
+                      checked={isSelected}
+                      onChange={(e) => handleResponse(question.id, e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                  <span className={`flex-1 text-gray-700 font-medium ${isSelected ? 'text-blue-700' : ''}`}>
+                    {optionLabel}
+                  </span>
                 </label>
               );
             })}
@@ -231,28 +382,42 @@ const SurveyResponse = () => {
         );
 
       case 'checkbox':
+      case 'multiple_select':
+      case 'multi_select':
         return (
           <div className="space-y-3">
-            {question.options.map((option, index) => {
+            {(question.options || []).map((option, index) => {
               const optionValue = typeof option === 'object' ? option.value || option.label : option;
               const optionLabel = typeof option === 'object' ? option.label || option.value : option;
               const currentValues = currentResponse || [];
+              const isSelected = currentValues.includes(optionValue);
               
               return (
-                <label key={index} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg">
-                  <input
-                    type="checkbox"
-                    value={optionValue}
-                    checked={currentValues.includes(optionValue)}
-                    onChange={(e) => {
-                      const newValues = e.target.checked
-                        ? [...currentValues, optionValue]
-                        : currentValues.filter(v => v !== optionValue);
-                      handleResponse(question.id, newValues);
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <span className="flex-1 text-gray-700">{optionLabel}</span>
+                <label key={index} className={`flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg border-2 transition-all duration-200 ${
+                  isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      value={optionValue}
+                      checked={isSelected}
+                      onChange={(e) => {
+                        const newValues = e.target.checked
+                          ? [...currentValues, optionValue]
+                          : currentValues.filter(v => v !== optionValue);
+                        handleResponse(question.id, newValues);
+                      }}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                  <span className={`flex-1 text-gray-700 font-medium ${isSelected ? 'text-green-700' : ''}`}>
+                    {optionLabel}
+                  </span>
                 </label>
               );
             })}
@@ -260,27 +425,41 @@ const SurveyResponse = () => {
         );
 
       case 'dropdown':
+      case 'select':
+      case 'single_select':
         return (
-          <select
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Select an option</option>
-            {question.options.map((option, index) => {
-              const optionValue = typeof option === 'object' ? option.value || option.label : option;
-              const optionLabel = typeof option === 'object' ? option.label || option.value : option;
-              
-              return (
-                <option key={index} value={optionValue}>
-                  {optionLabel}
-                </option>
-              );
-            })}
-          </select>
+          <div className="relative">
+            <select
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Select an option</option>
+              {(question.options || []).map((option, index) => {
+                const optionValue = typeof option === 'object' ? option.value || option.label : option;
+                const optionLabel = typeof option === 'object' ? option.label || option.value : option;
+                
+                return (
+                  <option key={index} value={optionValue}>
+                    {optionLabel}
+                  </option>
+                );
+              })}
+            </select>
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
         );
 
       case 'linear_scale':
+      case 'scale':
+      case 'likert_scale':
+      case 'likert':
         const min = question.settings?.min || 1;
         const max = question.settings?.max || 5;
         const range = max - min + 1;
@@ -293,81 +472,235 @@ const SurveyResponse = () => {
               <span className="text-sm text-gray-600">{question.settings?.maxLabel || max}</span>
             </div>
             <div className="flex items-center justify-between">
-              {options.map((option) => (
-                <label key={option} className="flex flex-col items-center space-y-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`question-${question.id}`}
-                    value={option}
-                    checked={currentResponse === option}
-                    onChange={(e) => handleResponse(question.id, parseInt(e.target.value))}
-                    className="sr-only"
-                  />
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    currentResponse === option 
-                      ? 'border-blue-600 bg-blue-600 text-white' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}>
-                    {currentResponse === option && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                  </div>
-                  <span className="text-xs text-gray-600">{option}</span>
-                </label>
-              ))}
+              {options.map((option) => {
+                const isSelected = currentResponse === option;
+                return (
+                  <label key={option} className="flex flex-col items-center space-y-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      value={option}
+                      checked={isSelected}
+                      onChange={(e) => handleResponse(question.id, parseInt(e.target.value))}
+                      className="sr-only"
+                    />
+                    <div className="relative">
+                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                        isSelected 
+                          ? 'border-blue-600 bg-blue-600 text-white scale-110' 
+                          : 'border-gray-300 hover:border-gray-400 hover:scale-105'
+                      }`}>
+                        {isSelected ? (
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                        ) : (
+                          <span className="text-xs font-medium text-gray-600">{option}</span>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium ${isSelected ? 'text-blue-600' : 'text-gray-600'}`}>
+                      {option}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         );
 
       case 'emoji_scale':
+      case 'emoji_satisfaction':
+      case 'emoji_agreement':
+      case 'emoji_quality':
+      case 'emoji_mood':
+      case 'emoji_difficulty':
+      case 'emoji_likelihood':
+      case 'emoji_custom':
+      case 'svg_emoji_satisfaction':
+      case 'svg_emoji_mood':
+      case 'happy_scale':
+      case 'how_happy':
+      case 'experience':
         return (
           <div className="p-4 border rounded-lg">
-            <EmojiScale options={question.options} />
+            <EmojiScale 
+              options={question.options} 
+              value={currentResponse}
+              onChange={(value) => handleResponse(question.id, value)}
+            />
           </div>
         );
 
       case 'rating':
+      case 'star_rating':
+      case 'stars':
         const maxStars = question.settings?.max || 5;
         return (
-          <div className="flex items-center space-x-2">
-            {Array.from({ length: maxStars }, (_, i) => i + 1).map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => handleResponse(question.id, star)}
-                className={`p-1 rounded ${
-                  currentResponse >= star 
-                    ? 'text-yellow-500' 
-                    : 'text-gray-300 hover:text-yellow-400'
-                }`}
-              >
-                <Star className={`h-8 w-8 ${currentResponse >= star ? 'fill-current' : ''}`} />
-              </button>
-            ))}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              {Array.from({ length: maxStars }, (_, i) => i + 1).map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => handleResponse(question.id, star)}
+                  className={`p-1 rounded transition-all duration-200 ${
+                    currentResponse >= star 
+                      ? 'text-yellow-500 scale-110' 
+                      : 'text-gray-300 hover:text-yellow-400 hover:scale-105'
+                  }`}
+                >
+                  <Star className={`h-8 w-8 ${currentResponse >= star ? 'fill-current' : ''}`} />
+                </button>
+              ))}
+            </div>
             {currentResponse && (
-              <span className="ml-2 text-sm text-gray-600">
-                {currentResponse} out of {maxStars}
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  {currentResponse} out of {maxStars}
+                </span>
+                <div className="w-5 h-5 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  ✓
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'nps':
+      case 'net_promoter_score':
+      case 'nps_score':
+        const npsOptions = Array.from({ length: 11 }, (_, i) => i); // 0-10
+        return (
+          <div className="space-y-4">
+            <div className="text-center mb-4">
+              <p className="text-sm text-gray-600 mb-2">How likely are you to recommend this to a friend or colleague?</p>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>Not at all likely</span>
+                <span>Extremely likely</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              {npsOptions.map((option) => {
+                const isSelected = currentResponse === option;
+                return (
+                  <label key={option} className="flex flex-col items-center space-y-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      value={option}
+                      checked={isSelected}
+                      onChange={(e) => handleResponse(question.id, parseInt(e.target.value))}
+                      className="sr-only"
+                    />
+                    <div className="relative">
+                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                        isSelected 
+                          ? 'border-green-600 bg-green-600 text-white scale-110' 
+                          : 'border-gray-300 hover:border-gray-400 hover:scale-105'
+                      }`}>
+                        {isSelected ? (
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                        ) : (
+                          <span className="text-xs font-medium text-gray-600">{option}</span>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium ${isSelected ? 'text-green-600' : 'text-gray-600'}`}>
+                      {option}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {currentResponse !== null && (
+              <div className="text-center">
+                <span className="text-sm text-gray-600">NPS Score: {currentResponse}</span>
+              </div>
             )}
           </div>
         );
 
       case 'date':
         return (
-          <input
-            type="date"
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          <div className="relative">
+            <input
+              type="date"
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
         );
 
       case 'time':
         return (
-          <input
-            type="time"
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          <div className="relative">
+            <input
+              type="time"
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
+        );
+
+      case 'datetime':
+        return (
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="date"
+                value={currentResponse?.date || ''}
+                onChange={(e) => handleResponse(question.id, { ...currentResponse, date: e.target.value })}
+                className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                  currentResponse?.date ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                }`}
+              />
+              {currentResponse?.date && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  ✓
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type="time"
+                value={currentResponse?.time || ''}
+                onChange={(e) => handleResponse(question.id, { ...currentResponse, time: e.target.value })}
+                className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                  currentResponse?.time ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                }`}
+              />
+              {currentResponse?.time && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  ✓
+                </div>
+              )}
+            </div>
+          </div>
         );
 
       case 'phone':
@@ -399,41 +732,103 @@ const SurveyResponse = () => {
 
       case 'email':
         return (
-          <input
-            type="email"
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Enter email address"
-          />
+          <div className="relative">
+            <input
+              type="email"
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+              placeholder="Enter email address"
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
         );
 
       case 'url':
         return (
-          <input
-            type="url"
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Enter website URL"
-          />
+          <div className="relative">
+            <input
+              type="url"
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+              placeholder="Enter website URL"
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
         );
 
       case 'number':
         return (
-          <input
-            type="number"
-            value={currentResponse || ''}
-            onChange={(e) => handleResponse(question.id, e.target.value)}
-            min={question.settings?.min}
-            max={question.settings?.max}
-            step={question.settings?.step || 1}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Enter number"
-          />
+          <div className="relative">
+            <input
+              type="number"
+              value={currentResponse || ''}
+              onChange={(e) => handleResponse(question.id, e.target.value)}
+              min={question.settings?.min}
+              max={question.settings?.max}
+              step={question.settings?.step || 1}
+              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
+              }`}
+              placeholder="Enter number"
+            />
+            {currentResponse && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </div>
+        );
+
+      case 'slider':
+        const sliderMin = question.settings?.min || 0;
+        const sliderMax = question.settings?.max || 100;
+        const sliderStep = question.settings?.step || 1;
+        const sliderValue = currentResponse || sliderMin;
+        
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>{question.settings?.minLabel || sliderMin}</span>
+              <span className="font-medium text-lg">{sliderValue}</span>
+              <span>{question.settings?.maxLabel || sliderMax}</span>
+            </div>
+            <div className="relative">
+              <input
+                type="range"
+                min={sliderMin}
+                max={sliderMax}
+                step={sliderStep}
+                value={sliderValue}
+                onChange={(e) => handleResponse(question.id, parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                style={{
+                  background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${((sliderValue - sliderMin) / (sliderMax - sliderMin)) * 100}%, #E5E7EB ${((sliderValue - sliderMin) / (sliderMax - sliderMin)) * 100}%, #E5E7EB 100%)`
+                }}
+              />
+              <div className="absolute top-1/2 transform -translate-y-1/2 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold -ml-2.5" 
+                   style={{ left: `${((sliderValue - sliderMin) / (sliderMax - sliderMin)) * 100}%` }}>
+                ✓
+              </div>
+            </div>
+          </div>
         );
 
       case 'file_upload':
+      case 'file':
         return (
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
             <input
@@ -463,6 +858,18 @@ const SurveyResponse = () => {
                 </p>
               </div>
             </label>
+            {currentResponse && currentResponse.length > 0 && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    ✓
+                  </div>
+                  <span className="text-sm text-green-700">
+                    {currentResponse.length} file{currentResponse.length > 1 ? 's' : ''} selected
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -493,7 +900,7 @@ const SurveyResponse = () => {
               <thead>
                 <tr>
                   <th className="border border-gray-300 p-2 bg-gray-50"></th>
-                  {question.settings?.columns?.map((col, colIndex) => (
+                  {(question.settings?.columns || []).map((col, colIndex) => (
                     <th key={colIndex} className="border border-gray-300 p-2 bg-gray-50 text-center text-sm">
                       {col}
                     </th>
@@ -501,12 +908,12 @@ const SurveyResponse = () => {
                 </tr>
               </thead>
               <tbody>
-                {question.settings?.rows?.map((row, rowIndex) => (
+                {(question.settings?.rows || []).map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     <td className="border border-gray-300 p-2 bg-gray-50 text-sm font-medium">
                       {row}
                     </td>
-                    {question.settings?.columns?.map((col, colIndex) => (
+                    {(question.settings?.columns || []).map((col, colIndex) => (
                       <td key={colIndex} className="border border-gray-300 p-2 text-center">
                         <input
                           type="checkbox"
@@ -530,7 +937,7 @@ const SurveyResponse = () => {
               <thead>
                 <tr>
                   <th className="border border-gray-300 p-2 bg-gray-50"></th>
-                  {question.settings?.columns?.map((col, colIndex) => (
+                  {(question.settings?.columns || []).map((col, colIndex) => (
                     <th key={colIndex} className="border border-gray-300 p-2 bg-gray-50 text-center text-sm">
                       {col}
                     </th>
@@ -538,12 +945,12 @@ const SurveyResponse = () => {
                 </tr>
               </thead>
               <tbody>
-                {question.settings?.rows?.map((row, rowIndex) => (
+                {(question.settings?.rows || []).map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     <td className="border border-gray-300 p-2 bg-gray-50 text-sm font-medium">
                       {row}
                     </td>
-                    {question.settings?.columns?.map((col, colIndex) => (
+                    {(question.settings?.columns || []).map((col, colIndex) => (
                       <td key={colIndex} className="border border-gray-300 p-2 text-center">
                         <input
                           type="radio"
@@ -559,6 +966,17 @@ const SurveyResponse = () => {
               </tbody>
             </table>
           </div>
+        );
+
+      case 'matrix':
+        return (
+          <MatrixQuestion
+            question={question}
+            value={currentResponse || {}}
+            onChange={(value) => handleResponse(question.id, value)}
+            disabled={false}
+            isEditing={false}
+          />
         );
 
       default:

@@ -19,7 +19,7 @@ import {
   Settings
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../utils/axios';
+import api from '../services/api';
 
 const SurveyTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
   const navigate = useNavigate();
@@ -29,26 +29,9 @@ const SurveyTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch templates from API
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        setLoading(true);
-        // Check if user is authenticated
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('Please log in to access templates');
-          setLoading(false);
-          return;
-        }
-        
-        const response = await api.get('/api/templates');
-        setTemplates(response.data);
-      } catch (err) {
-        console.error('Error fetching templates:', err);
-        setError(err.message);
-        // Fallback to hardcoded templates if API fails
-        setTemplates([
+  // Default templates function
+  const getDefaultTemplates = () => {
+    return [
           {
             id: 'customer-satisfaction',
             name: 'Customer Satisfaction Survey',
@@ -207,7 +190,40 @@ const SurveyTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
             estimatedTime: '3-4 minutes',
             responseCount: 0
           }
-        ]);
+        ];
+  };
+
+  // Fetch templates from API
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔍 Fetching survey templates...');
+        
+        // Use the proper Supabase API to get templates
+        const response = await api.templates.getTemplates();
+        
+        if (response.error) {
+          console.error('❌ API error:', response.error);
+          setError(response.error);
+          setTemplates(getDefaultTemplates());
+        } else {
+          console.log('✅ Templates loaded:', response.templates.length);
+          setTemplates(response.templates || []);
+          
+          // If no templates found, use fallback
+          if (!response.templates || response.templates.length === 0) {
+            console.log('⚠️ No templates found, using default templates');
+            setTemplates(getDefaultTemplates());
+          }
+        }
+      } catch (err) {
+        console.error('💥 Error fetching templates:', err);
+        setError(err.message);
+        console.log('🔄 Using default templates due to error');
+        setTemplates(getDefaultTemplates());
       } finally {
         setLoading(false);
       }

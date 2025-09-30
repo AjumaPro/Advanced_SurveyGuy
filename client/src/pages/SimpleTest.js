@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../utils/axios';
+import api from '../services/api';
 
 const SimpleTest = () => {
   const [result, setResult] = useState('');

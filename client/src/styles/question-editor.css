@@ -1,0 +1,78 @@
+/* Question Editor Layout Improvements */
+.question-editor-container {
+  /* Ensure no horizontal scrolling */
+  overflow-x: hidden;
+  /* Prevent any swipe gestures */
+  touch-action: pan-y;
+  /* Ensure proper scrolling behavior */
+  -webkit-overflow-scrolling: touch;
+}
+
+.question-editor-content {
+  /* Prevent content from overflowing horizontally */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.question-editor-section {
+  /* Ensure sections don't cause horizontal overflow */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 1280px) {
+  .question-editor-mobile-modal {
+    /* Ensure modal doesn't cause swipe issues */
+    touch-action: pan-y;
+    overflow-x: hidden;
+  }
+  
+  .question-editor-mobile-content {
+    /* Prevent horizontal scrolling in mobile */
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+}
+
+/* Desktop-specific improvements */
+@media (min-width: 1280px) {
+  .question-editor-desktop {
+    /* Ensure proper scrolling in desktop */
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* Form element improvements */
+.question-editor input,
+.question-editor textarea,
+.question-editor select {
+  /* Prevent form elements from causing horizontal overflow */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Button improvements */
+.question-editor button {
+  /* Ensure buttons don't cause layout issues */
+  touch-action: manipulation;
+}
+
+/* Prevent any accidental swipe gestures */
+.no-swipe {
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in input fields */
+.question-editor input,
+.question-editor textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}

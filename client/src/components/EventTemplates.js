@@ -18,10 +18,12 @@ import {
   Eye,
   Copy,
   Edit,
-  Settings
+  Settings,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../utils/axios';
+import api from '../services/api';
 
 const EventTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
   const navigate = useNavigate();
@@ -442,7 +444,18 @@ const EventTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
     if (onSelectTemplate) {
       onSelectTemplate(template);
     } else {
-      toast.success(`Event template "${template.name}" selected!`);
+      // Check if it's a professional template
+      const isProfessional = ['business-conference', 'team-building', 'educational-workshop', 'professional-webinar', 'networking-event'].includes(template.id);
+      
+      if (isProfessional) {
+        // Navigate to professional event creation page
+        navigate('/app/templates/professional-events', { 
+          state: { selectedTemplate: template } 
+        });
+      } else {
+        // Use regular template flow
+        toast.success(`Event template "${template.name}" selected!`);
+      }
     }
   };
 
@@ -534,12 +547,25 @@ const EventTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
     );
   }
 
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Event Templates</h1>
-        <p className="text-gray-600">Choose from our collection of pre-built event templates</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Event Templates</h1>
+            <p className="text-gray-600">Choose from our collection of pre-built event templates</p>
+          </div>
+          <button
+            onClick={() => navigate('/app/templates/professional-events')}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            <Sparkles className="w-5 h-5" />
+            <span className="font-medium">Professional Creator</span>
+            <Zap className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -586,7 +612,15 @@ const EventTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
                     {getIconComponent(template.icon)}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{template.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-900">{template.name}</h3>
+                      {['business-conference', 'team-building', 'educational-workshop', 'professional-webinar', 'networking-event'].includes(template.id) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 rounded-full border border-blue-200">
+                          <Sparkles className="w-3 h-3" />
+                          Professional
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">{template.estimatedDuration}</p>
                   </div>
                 </div>
@@ -637,13 +671,25 @@ const EventTemplates = ({ onSelectTemplate, onPreviewTemplate }) => {
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => handleUseTemplate(template)}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Use Template
-                </button>
+                {/* Professional Templates get special treatment */}
+                {['business-conference', 'team-building', 'educational-workshop', 'professional-webinar', 'networking-event'].includes(template.id) ? (
+                  <button
+                    onClick={() => handleUseTemplate(template)}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Create Professional Event
+                    <Zap className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleUseTemplate(template)}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Use Template
+                  </button>
+                )}
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleEditTemplate(template)}

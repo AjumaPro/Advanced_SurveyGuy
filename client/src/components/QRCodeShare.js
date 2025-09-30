@@ -1,7 +1,7 @@
 import React from 'react';
 import QRCode from 'react-qr-code';
 import { Copy, Download, Share2, X } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const QRCodeShare = ({ surveyUrl, surveyTitle, onClose }) => {
 

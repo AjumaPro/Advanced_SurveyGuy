@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../utils/axios';
+import api from '../services/api';
 
 const AuthTest = () => {
   const [loginData, setLoginData] = useState({

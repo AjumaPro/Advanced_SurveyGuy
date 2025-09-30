@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   FileText,
@@ -20,7 +21,10 @@ import {
   Crown,
   DollarSign,
   Calendar,
-  Zap
+  Zap,
+  Bell,
+  Search,
+  ChevronDown
 } from 'lucide-react';
 
 const Layout = () => {
@@ -28,16 +32,27 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState({});
 
   const navigation = [
     { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
     { name: 'Advanced Dashboard', href: '/app/advanced-dashboard', icon: BarChart3 },
+    { 
+      name: 'Events', 
+      icon: Calendar, 
+      isDropdown: true,
+      items: [
+        { name: 'Event Dashboard', href: '/app/events', icon: Calendar },
+        { name: 'Published Events', href: '/app/events/published', icon: Calendar },
+        { name: 'Advanced Events', href: '/app/advanced-events', icon: Zap, badge: 'Pro' },
+        { name: 'Professional Creator', href: '/app/templates/professional-events', icon: Sparkles, badge: 'New' }
+      ]
+    },
     { name: 'Surveys', href: '/app/surveys', icon: FileText },
     { name: 'Templates', href: '/app/templates', icon: Sparkles },
     { name: 'Survey Builder', href: '/app/builder', icon: Plus },
     { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
-    { name: 'Events', href: '/app/events', icon: Calendar },
-    { name: 'Advanced Events', href: '/app/advanced-events', icon: Zap },
+    { name: 'Features', href: '/app/features', icon: Sparkles },
     { name: 'Subscriptions', href: '/app/subscriptions', icon: Mail },
     { name: 'Billing', href: '/app/billing', icon: CreditCard },
     { name: 'Pricing', href: '/pricing', icon: DollarSign },
@@ -77,8 +92,19 @@ const Layout = () => {
     }
   };
 
+  const toggleDropdown = (itemName) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [itemName]: !prev[itemName]
+    }));
+  };
+
   const isActive = (path) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const isDropdownActive = (items) => {
+    return items.some(item => isActive(item.href));
   };
 
   return (
@@ -99,6 +125,76 @@ const Layout = () => {
           <nav className="flex-1 space-y-1 px-2 py-4">
             {allNavigation.map((item) => {
               const Icon = item.icon;
+              
+              if (item.isDropdown) {
+                const isOpen = openDropdowns[item.name];
+                const hasActiveChild = isDropdownActive(item.items);
+                
+                return (
+                  <div key={item.name} className="space-y-1">
+                    <button
+                      onClick={() => toggleDropdown(item.name)}
+                      className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
+                        hasActiveChild
+                          ? 'bg-blue-100 text-blue-900'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </div>
+                      <ChevronDown 
+                        className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+                      />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="ml-4 space-y-1"
+                        >
+                          {item.items.map((subItem) => {
+                            const SubIcon = subItem.icon;
+                            return (
+                              <button
+                                key={subItem.name}
+                                onClick={() => {
+                                  handleNavigation(subItem.href);
+                                  setSidebarOpen(false);
+                                }}
+                                className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
+                                  isActive(subItem.href)
+                                    ? 'bg-blue-100 text-blue-900'
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                }`}
+                              >
+                                <div className="flex items-center">
+                                  <SubIcon className="mr-3 h-4 w-4" />
+                                  {subItem.name}
+                                </div>
+                                {subItem.badge && (
+                                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                    subItem.badge === 'Pro' 
+                                      ? 'bg-purple-100 text-purple-700' 
+                                      : 'bg-green-100 text-green-700'
+                                  }`}>
+                                    {subItem.badge}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+              
               return (
                 <button
                   key={item.name}
@@ -150,6 +246,73 @@ const Layout = () => {
           <nav className="flex-1 space-y-1 px-2 py-4">
             {allNavigation.map((item) => {
               const Icon = item.icon;
+              
+              if (item.isDropdown) {
+                const isOpen = openDropdowns[item.name];
+                const hasActiveChild = isDropdownActive(item.items);
+                
+                return (
+                  <div key={item.name} className="space-y-1">
+                    <button
+                      onClick={() => toggleDropdown(item.name)}
+                      className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
+                        hasActiveChild
+                          ? 'bg-blue-100 text-blue-900'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </div>
+                      <ChevronDown 
+                        className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+                      />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="ml-4 space-y-1"
+                        >
+                          {item.items.map((subItem) => {
+                            const SubIcon = subItem.icon;
+                            return (
+                              <button
+                                key={subItem.name}
+                                onClick={() => handleNavigation(subItem.href)}
+                                className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors w-full text-left ${
+                                  isActive(subItem.href)
+                                    ? 'bg-blue-100 text-blue-900'
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                }`}
+                              >
+                                <div className="flex items-center">
+                                  <SubIcon className="mr-3 h-4 w-4" />
+                                  {subItem.name}
+                                </div>
+                                {subItem.badge && (
+                                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                    subItem.badge === 'Pro' 
+                                      ? 'bg-purple-100 text-purple-700' 
+                                      : 'bg-green-100 text-green-700'
+                                  }`}>
+                                    {subItem.badge}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+              
               return (
                 <button
                   key={item.name}

@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {useAuth} from '../contexts/AuthContext';
 import {useNavigate} from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 import {
   Users,
   CreditCard,
   Package,
-  Shield,
-  TrendingUp,
   Activity,
   UserCheck,
   UserX,
   DollarSign,
-  Settings,
-  FileText,
-  BarChart3
+  Crown
 } from 'lucide-react';
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     pendingAccounts: 0,
@@ -29,19 +25,23 @@ const AdminDashboard = () => {
   const [recentActions, setRecentActions] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (user?.role !== 'admin' && user?.role !== 'super_admin' && !user?.super_admin) {
+    const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
+    if (!user || !isAdmin) {
       navigate('/app/dashboard');
       return;
     }
     fetchDashboardData();
-  }, [user, navigate]);
+  }, [user, userProfile, navigate]);
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get('/api/admin/dashboard', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setStats(response.data.stats);
-      setRecentActions(response.data.recentActions);
+      const response = await api.admin.getDashboardStats();
+      if (response.error) {
+        console.error('Admin dashboard error:', response.error);
+        toast.error('Failed to load admin dashboard');
+      } else {
+        setStats(response.stats);
+        setRecentActions(response.recentActions);
+      }
     } catch (error) {
       console.error('Error fetching admin dashboard:', error);
       toast.error('Failed to load admin dashboard');
@@ -164,6 +164,30 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
+        {/* Super Admin Access */}
+        {(user?.email === 'infoajumapro@gmail.com' || userProfile?.role === 'super_admin') && (
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Crown className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Super Admin Access</h3>
+                  <p className="text-gray-600">Access the complete Super Admin Dashboard for full system control</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/app/super-admin')}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Crown className="w-4 h-4" />
+                <span>Super Admin Dashboard</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Manage Packages */}

@@ -7,11 +7,12 @@ import {
   BarChart3,
   Eye,
   Download,
-  Share2
+  Share2,
+  Image
 } from 'lucide-react';
 import { Line, Doughnut } from 'react-chartjs-2';
 
-const AnalyticsSummary = ({ data, loading, onExport, onShare }) => {
+const AnalyticsSummary = ({ data, loading, onExport, onShare, onGenerateReport, onDownloadCharts }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -231,13 +232,15 @@ const AnalyticsSummary = ({ data, loading, onExport, onShare }) => {
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={onExport}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Download className="h-4 w-4" />
-            <span>Export Data</span>
-          </button>
+          <div className="relative group">
+            <button
+              onClick={onExport}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              <span>Export Data</span>
+            </button>
+          </div>
           <button
             onClick={onShare}
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -245,9 +248,19 @@ const AnalyticsSummary = ({ data, loading, onExport, onShare }) => {
             <Share2 className="h-4 w-4" />
             <span>Share Report</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+          <button 
+            onClick={onGenerateReport}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
             <BarChart3 className="h-4 w-4" />
             <span>Generate Report</span>
+          </button>
+          <button 
+            onClick={onDownloadCharts}
+            className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            <Image className="h-4 w-4" />
+            <span>Download Charts</span>
           </button>
         </div>
       </motion.div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Check, Star, Crown, Zap, Users, BarChart3, Shield, Globe, ChevronDown, Sparkles } from 'lucide-react';
+import { Check, Star, Crown, Zap, Users, BarChart3, Globe, ChevronDown, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -64,26 +64,30 @@ const Pricing = () => {
     }
   }), []);
 
-  // Base plans with GHS pricing (matching billing page)
+  // Base plans with GHS pricing (Premium removed, remaining upgraded)
   const basePlans = [
     {
       name: 'Free',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      description: 'Perfect for getting started',
+      description: 'Perfect for getting started with powerful features',
       features: [
-        'Up to 3 surveys',
-        '50 responses per survey',
-        'Basic question types',
-        'Email support',
+        'Up to 5 surveys', // Upgraded from 3
+        '100 responses per survey', // Upgraded from 50
+        'All question types', // Upgraded from basic
+        'File uploads', // New feature
         'Basic analytics',
-        'Standard templates'
+        'Standard templates',
+        'Email support',
+        'QR code generation', // New feature
+        'Export to PDF', // New feature
+        '2 GB storage' // Upgraded from 1 GB
       ],
       limitations: [
-        'No advanced question types',
-        'No file uploads',
         'No custom branding',
-        'No API access'
+        'No API access',
+        'No team collaboration',
+        'Basic support only'
       ],
       icon: Star,
       color: 'text-gray-600',
@@ -91,73 +95,64 @@ const Pricing = () => {
       borderColor: 'border-gray-200'
     },
     {
-      name: 'Basic',
-      monthlyPrice: 29.99,
-      yearlyPrice: 299.99, // 10 months price (2 months free)
-      description: 'For growing businesses',
+      name: 'Pro',
+      monthlyPrice: 49.99, // Upgraded price with more features
+      yearlyPrice: 499.99, // 10 months price (2 months free)
+      description: 'For growing businesses and teams',
       features: [
         'Unlimited surveys',
-        '1,000 responses per survey',
+        '10,000 responses per survey', // Upgraded to 10,000
         'All question types',
         'File uploads',
         'Custom branding',
-        'Advanced analytics',
+        'Advanced analytics & reporting', // Enhanced
+        'Team collaboration', // New feature from premium
         'Priority support',
+        'API access', // New feature from premium
         'Export to PDF/Excel',
         'QR code generation',
-        'Survey templates'
+        'Premium templates',
+        'White-label options', // New feature from premium
+        'Advanced security', // New feature from premium
+        '20 GB storage', // Upgraded storage
+        'Multi-language support' // New feature from premium
       ],
-      popular: false,
+      popular: true, // Now the most popular plan
       icon: Zap,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200'
     },
     {
-      name: 'Premium',
-      monthlyPrice: 79.99,
-      yearlyPrice: 799.99, // 10 months price (2 months free)
-      description: 'For teams and organizations',
-      features: [
-        'Everything in Basic',
-        '5,000 responses per survey',
-        'Team collaboration',
-        'Advanced reporting',
-        'API access',
-        'White-label options',
-        'Custom integrations',
-        'Dedicated support',
-        'Advanced security',
-        'Multi-language support'
-      ],
-      popular: true,
-      icon: Crown,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200'
-    },
-    {
       name: 'Enterprise',
-      monthlyPrice: 99.99,
-      yearlyPrice: 999.99, // 10 months price (2 months free)
-      description: 'For large organizations',
+      monthlyPrice: 149.99, // Upgraded price with premium features
+      yearlyPrice: 1499.99, // 10 months price (2 months free)
+      description: 'Complete solution for large organizations',
       features: [
-        'Everything in Premium',
+        'Everything in Pro',
         'Unlimited responses',
+        'Advanced team collaboration', // Enhanced
         'Custom development',
         'On-premise deployment',
-        'Advanced security',
+        'Enterprise-grade security', // Enhanced
         'SLA guarantee',
         'Dedicated account manager',
-        'Custom training',
-        'Advanced integrations',
-        'Compliance features'
+        'Custom training & onboarding', // Enhanced
+        'Advanced integrations & webhooks', // Enhanced
+        'Compliance features (GDPR, HIPAA)', // Enhanced
+        'Custom reporting & dashboards', // Enhanced
+        'Single Sign-On (SSO)', // New feature
+        'Advanced user management', // New feature
+        'Custom workflows', // New feature
+        'Unlimited storage',
+        '24/7 phone & chat support', // Enhanced
+        'Priority feature requests' // New feature
       ],
       popular: false,
-      icon: Shield,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
+      icon: Crown,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-200'
     }
   ];
 

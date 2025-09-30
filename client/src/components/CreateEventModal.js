@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../utils/axios';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const CreateEventModal = ({ event, onClose, onSuccess }) => {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('standard');
   
@@ -65,26 +67,55 @@ const CreateEventModal = ({ event, onClose, onSuccess }) => {
   }, [event, setValue]);
 
   const handleFormSubmit = async (data) => {
+    if (!user) {
+      toast.error('Please log in to create events');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const eventData = {
-        ...data,
-        template: selectedTemplate,
-        createdDate: new Date().toISOString()
+        title: data.title,
+        description: data.description,
+        event_type: selectedTemplate,
+        start_date: new Date(data.date + 'T' + data.time).toISOString(),
+        end_date: data.endDate ? new Date(data.endDate + 'T' + (data.endTime || data.time)).toISOString() : null,
+        location: data.location,
+        virtual_link: data.meetingLink,
+        capacity: parseInt(data.capacity) || 0,
+        registration_required: data.registrationRequired !== false,
+        is_public: data.isPublic || false,
+        metadata: {
+          template: selectedTemplate,
+          speakers: data.speakers,
+          agenda: data.agenda,
+          materials: data.materials,
+          requirements: data.requirements,
+          platform: data.platform
+        }
       };
 
       if (event) {
         // Update existing event
-        await api.put(`/events/${event.id}`, eventData);
-        toast.success('Event updated successfully!');
+        const response = await api.events.updateEvent(event.id, eventData);
+        if (response.error) {
+          toast.error(`Failed to update event: ${response.error}`);
+        } else {
+          toast.success('Event updated successfully!');
+          reset();
+          onSuccess();
+        }
       } else {
         // Create new event
-        await api.post('/events', eventData);
-        toast.success('Event created successfully!');
+        const response = await api.events.createEvent(user.id, eventData);
+        if (response.error) {
+          toast.error(`Failed to create event: ${response.error}`);
+        } else {
+          toast.success('Event created successfully!');
+          reset();
+          onSuccess();
+        }
       }
-
-      reset();
-      onSuccess();
     } catch (error) {
       console.error('Error saving event:', error);
       toast.error(event ? 'Failed to update event' : 'Failed to create event');

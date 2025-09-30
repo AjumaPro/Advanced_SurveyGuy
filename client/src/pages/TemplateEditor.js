@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {useParams, useNavigate, Link} from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Save,
   ArrowLeft,
@@ -34,15 +35,16 @@ import {
 } from 'lucide-react';
 import {motion, AnimatePresence} from 'framer-motion';
 import toast from 'react-hot-toast';
-import api from '../utils/axios';
+import api from '../services/api';
 const TemplateEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [ setTemplate] = useState(null);
+  const { user } = useAuth();
+  const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [ ] = useState(null);
+  const [editingQuestion, setEditingQuestion] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
   // Template form state
   const [formData, setFormData] = useState({
@@ -102,19 +104,15 @@ const TemplateEditor = () => {
     { id: 'yes-no', name: 'Yes/No', icon: <AlertCircle className="w-4 h-4" /> },
     { id: 'emoji-scale', name: 'Emoji Scale', icon: <Star className="w-4 h-4" /> }
   ];
-  useEffect(() => {
-    if (id && id !== 'new') {
-      fetchTemplate();
-    } else {
-      // New 
-      setTemplate({ id: 'new', name: 'New Template', description: '', category: 'customer-feedback' });
-    }
-  }, [id, fetchTemplate]);
+
   const fetchTemplate = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/templates/${id}`);
-      const templateData = response.data;
+      const response = await api.templates.getTemplate(id);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      const templateData = response.template;
       setTemplate(templateData);
       setFormData({
         name: templateData.name || '',
@@ -129,34 +127,62 @@ const TemplateEditor = () => {
         templateType: templateData.templateType || 'survey'
       });
     } catch (error) {
-      console.error('Error fetching :', error);
-      toast.error('Failed to load ');
+      console.error('Error fetching template:', error);
+      toast.error('Failed to load template');
       navigate('/app/templates');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (id && id !== 'new') {
+      fetchTemplate();
+    } else {
+      // New template
+      setTemplate({ id: 'new', name: 'New Template', description: '', category: 'customer-feedback' });
+    }
+  }, [id]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
       
       const templateData = {
-        ...formData,
-        questions: formData.questions.map((q, index) => ({ ...q, order: index }))
+        title: formData.name,
+        description: formData.description,
+        template_category: formData.category,
+        template_industry: formData.industry || 'general',
+        estimated_time: formData.estimatedTime,
+        target_audience: formData.targetAudience,
+        questions: formData.questions.map((q, index) => ({ ...q, order: index })),
+        settings: {
+          allowAnonymous: true,
+          collectEmail: false,
+          showProgress: true
+        },
+        is_public: formData.isPublic || false
       };
+      
       if (id === 'new') {
-        // Create new 
-        const response = await api.post('/api/templates', templateData);
+        // Create new template
+        const response = await api.templates.createTemplate(user.id, templateData);
+        if (response.error) {
+          throw new Error(response.error);
+        }
         toast.success('Template created successfully!');
-        navigate(`/app/templates/${response.data.id}/edit`);
+        navigate(`/app/template-editor/${response.template.id}`);
       } else {
-        // Update existing 
-        await api.put(`/api/templates/${id}`, templateData);
+        // Update existing template
+        const response = await api.templates.updateTemplate(id, templateData);
+        if (response.error) {
+          throw new Error(response.error);
+        }
         toast.success('Template updated successfully!');
       }
     } catch (error) {
-      console.error('Error saving :', error);
-      toast.error('Failed to save ');
+      console.error('Error saving template:', error);
+      toast.error('Failed to save template');
     } finally {
       setSaving(false);
     }

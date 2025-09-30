@@ -1,0 +1,145 @@
+{
+  "emojiSets": {
+    "basic-emotions": {
+      "name": "Basic Emotions",
+      "description": "Common emotional expressions",
+      "emojis": [
+        { "emoji": "😠", "label": "Angry", "value": "angry", "file": "angry.svg" },
+        { "emoji": "😢", "label": "Sad", "value": "sad", "file": "red-sad.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": "neutral", "file": "yellow-neutral.svg" },
+        { "emoji": "🙂", "label": "Happy", "value": "happy", "file": "green-happy.svg" },
+        { "emoji": "😊", "label": "Very Happy", "value": "very_happy", "file": "green-very-happy.svg" }
+      ]
+    },
+    "extended-emotions": {
+      "name": "Extended Emotions",
+      "description": "Wider range of emotional expressions",
+      "emojis": [
+        { "emoji": "😠", "label": "Angry", "value": "angry", "file": "angry.svg" },
+        { "emoji": "😢", "label": "Crying", "value": "crying", "file": "crying.svg" },
+        { "emoji": "😞", "label": "Disappointed", "value": "disappointed", "file": "red-sad.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": "neutral", "file": "yellow-neutral.svg" },
+        { "emoji": "🤔", "label": "Thinking", "value": "thinking", "file": "thinking.svg" },
+        { "emoji": "😊", "label": "Happy", "value": "happy", "file": "green-happy.svg" },
+        { "emoji": "😄", "label": "Laughing", "value": "laughing", "file": "laughing.svg" },
+        { "emoji": "🤩", "label": "Excited", "value": "excited", "file": "excited.svg" }
+      ]
+    },
+    "satisfaction": {
+      "name": "Satisfaction Scale",
+      "description": "Customer satisfaction rating scale",
+      "emojis": [
+        { "emoji": "😠", "label": "Very Dissatisfied", "value": 1, "file": "satisfaction/very-dissatisfied.svg" },
+        { "emoji": "😞", "label": "Dissatisfied", "value": 2, "file": "satisfaction/dissatisfied.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": 3, "file": "satisfaction/neutral.svg" },
+        { "emoji": "🙂", "label": "Satisfied", "value": 4, "file": "satisfaction/satisfied.svg" },
+        { "emoji": "😊", "label": "Very Satisfied", "value": 5, "file": "satisfaction/very-satisfied.svg" }
+      ]
+    },
+    "quality": {
+      "name": "Quality Rating",
+      "description": "Product or service quality assessment",
+      "emojis": [
+        { "emoji": "😠", "label": "Poor", "value": 1, "file": "quality/poor.svg" },
+        { "emoji": "😐", "label": "Fair", "value": 2, "file": "quality/fair.svg" },
+        { "emoji": "🙂", "label": "Good", "value": 3, "file": "quality/good.svg" },
+        { "emoji": "😊", "label": "Very Good", "value": 4, "file": "quality/very-good.svg" },
+        { "emoji": "🤩", "label": "Excellent", "value": 5, "file": "quality/excellent.svg" }
+      ]
+    },
+    "agreement": {
+      "name": "Agreement Scale",
+      "description": "Likert scale for agreement statements",
+      "emojis": [
+        { "emoji": "😠", "label": "Strongly Disagree", "value": 1, "file": "agreement/strongly-disagree.svg" },
+        { "emoji": "😞", "label": "Disagree", "value": 2, "file": "agreement/disagree.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": 3, "file": "agreement/neutral.svg" },
+        { "emoji": "🙂", "label": "Agree", "value": 4, "file": "agreement/agree.svg" },
+        { "emoji": "😊", "label": "Strongly Agree", "value": 5, "file": "agreement/strongly-agree.svg" }
+      ]
+    },
+    "frequency": {
+      "name": "Frequency Scale",
+      "description": "How often something occurs",
+      "emojis": [
+        { "emoji": "😐", "label": "Never", "value": 1, "file": "frequency/never.svg" },
+        { "emoji": "😕", "label": "Rarely", "value": 2, "file": "frequency/rarely.svg" },
+        { "emoji": "😐", "label": "Sometimes", "value": 3, "file": "frequency/sometimes.svg" },
+        { "emoji": "🙂", "label": "Often", "value": 4, "file": "frequency/often.svg" },
+        { "emoji": "😊", "label": "Always", "value": 5, "file": "frequency/always.svg" }
+      ]
+    },
+    "mood": {
+      "name": "Mood Check",
+      "description": "General mood assessment",
+      "emojis": [
+        { "emoji": "😢", "label": "Very Sad", "value": "very_sad", "file": "red-very-sad.svg" },
+        { "emoji": "😞", "label": "Sad", "value": "sad", "file": "red-sad.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": "neutral", "file": "yellow-neutral.svg" },
+        { "emoji": "🙂", "label": "Slightly Happy", "value": "slightly_happy", "file": "yellow-slightly-happy.svg" },
+        { "emoji": "😊", "label": "Happy", "value": "happy", "file": "green-happy.svg" },
+        { "emoji": "🤩", "label": "Very Happy", "value": "very_happy", "file": "green-very-happy.svg" }
+      ]
+    },
+    "experience": {
+      "name": "Experience Rating",
+      "description": "Overall experience assessment",
+      "emojis": [
+        { "emoji": "😠", "label": "Terrible", "value": "terrible", "file": "angry.svg" },
+        { "emoji": "😞", "label": "Poor", "value": "poor", "file": "red-sad.svg" },
+        { "emoji": "😐", "label": "Average", "value": "average", "file": "yellow-neutral.svg" },
+        { "emoji": "🙂", "label": "Good", "value": "good", "file": "green-happy.svg" },
+        { "emoji": "🤩", "label": "Excellent", "value": "excellent", "file": "excited.svg" }
+      ]
+    },
+    "likelihood": {
+      "name": "Likelihood Scale",
+      "description": "How likely something is to happen",
+      "emojis": [
+        { "emoji": "😠", "label": "Very Unlikely", "value": "very_unlikely", "file": "angry.svg" },
+        { "emoji": "😞", "label": "Unlikely", "value": "unlikely", "file": "red-sad.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": "neutral", "file": "yellow-neutral.svg" },
+        { "emoji": "🙂", "label": "Likely", "value": "likely", "file": "green-happy.svg" },
+        { "emoji": "🤩", "label": "Very Likely", "value": "very_likely", "file": "excited.svg" }
+      ]
+    },
+    "customer-satisfaction": {
+      "name": "Customer Satisfaction Scale",
+      "description": "5-point satisfaction scale with green happy to red angry faces",
+      "emojis": [
+        { "emoji": "😊", "label": "Very Satisfied", "value": 5, "file": "survey-scales/very-satisfied.svg" },
+        { "emoji": "🙂", "label": "Satisfied", "value": 4, "file": "survey-scales/satisfied.svg" },
+        { "emoji": "😐", "label": "Neutral", "value": 3, "file": "survey-scales/neutral.svg" },
+        { "emoji": "😞", "label": "Unsatisfied", "value": 2, "file": "survey-scales/unsatisfied.svg" },
+        { "emoji": "😠", "label": "Very Unsatisfied", "value": 1, "file": "survey-scales/very-unsatisfied.svg" }
+      ]
+    },
+    "likelihood-recommendation": {
+      "name": "Likelihood to Recommend Scale",
+      "description": "10-point likelihood scale with red sad to green happy faces",
+      "emojis": [
+        { "emoji": "😞", "label": "1", "value": 1, "file": "survey-scales/likelihood-1-6.svg" },
+        { "emoji": "😞", "label": "2", "value": 2, "file": "survey-scales/likelihood-1-6.svg" },
+        { "emoji": "😞", "label": "3", "value": 3, "file": "survey-scales/likelihood-1-6.svg" },
+        { "emoji": "😞", "label": "4", "value": 4, "file": "survey-scales/likelihood-1-6.svg" },
+        { "emoji": "😞", "label": "5", "value": 5, "file": "survey-scales/likelihood-1-6.svg" },
+        { "emoji": "😞", "label": "6", "value": 6, "file": "survey-scales/likelihood-1-6.svg" },
+        { "emoji": "😐", "label": "7", "value": 7, "file": "survey-scales/likelihood-7-8.svg" },
+        { "emoji": "😐", "label": "8", "value": 8, "file": "survey-scales/likelihood-7-8.svg" },
+        { "emoji": "🙂", "label": "9", "value": 9, "file": "survey-scales/likelihood-9-10.svg" },
+        { "emoji": "🙂", "label": "10", "value": 10, "file": "survey-scales/likelihood-9-10.svg" }
+      ]
+    },
+    "ease-of-interaction": {
+      "name": "Ease of Interaction Scale",
+      "description": "5-point ease scale with green easy to red difficult faces",
+      "emojis": [
+        { "emoji": "😊", "label": "Very Easy", "value": 5, "file": "survey-scales/very-easy.svg" },
+        { "emoji": "🙂", "label": "Easy", "value": 4, "file": "survey-scales/easy.svg" },
+        { "emoji": "😐", "label": "Moderate", "value": 3, "file": "survey-scales/moderate.svg" },
+        { "emoji": "😞", "label": "Difficult", "value": 2, "file": "survey-scales/difficult.svg" },
+        { "emoji": "😠", "label": "Very Difficult", "value": 1, "file": "survey-scales/very-difficult.svg" }
+      ]
+    }
+  }
+}

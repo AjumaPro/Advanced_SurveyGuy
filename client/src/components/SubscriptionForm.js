@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, CheckCircle, Bell } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import axios from 'axios';
 
 const SubscriptionForm = ({ surveyId, surveyTitle, onSubscribe }) => {

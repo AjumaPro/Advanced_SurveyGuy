@@ -3,6 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Professional Styling */
+@import './styles/professional.css';
+
+/* Import Question Editor Styling */
+@import './styles/question-editor.css';
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;

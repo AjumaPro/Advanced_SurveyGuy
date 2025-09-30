@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import EventManagementDashboard from '../components/EventManagementDashboard';
 import EventRegistrationForm from '../components/EventRegistrationForm';
+import PublishedEventsSection from '../components/PublishedEventsSection';
 import { Calendar, Users, MapPin, Clock, Plus } from 'lucide-react';
 
 const EventManagement = () => {
@@ -75,6 +76,16 @@ const EventManagement = () => {
                 Dashboard
               </button>
               <button
+                onClick={() => setActiveTab('published')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === 'published'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Published Events
+              </button>
+              <button
                 onClick={() => setActiveTab('registration')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   activeTab === 'registration'
@@ -93,6 +104,8 @@ const EventManagement = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' ? (
           <EventManagementDashboard />
+        ) : activeTab === 'published' ? (
+          <PublishedEventsSection />
         ) : (
           <div className="space-y-8">
             {/* Sample Events Section */}

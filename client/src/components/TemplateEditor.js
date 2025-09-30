@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import api from '../utils/axios';
+import api from '../services/api';
 
 const TemplateEditor = () => {
   const { id } = useParams();

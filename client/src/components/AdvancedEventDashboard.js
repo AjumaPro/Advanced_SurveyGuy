@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Users,
@@ -23,6 +24,7 @@ import toast from 'react-hot-toast';
 import AdvancedEventRegistrationForm from './AdvancedEventRegistrationForm';
 
 const AdvancedEventDashboard = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
@@ -30,12 +32,37 @@ const AdvancedEventDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('grid');
   const [loading, setLoading] = useState(true);
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [stats, setStats] = useState({
     totalEvents: 0,
     activeEvents: 0,
     totalRegistrations: 0,
     revenue: 0
   });
+
+  const handleCreateEvent = () => {
+    // Navigate to professional event creation
+    navigate('/app/templates/professional-events');
+  };
+
+  const handleCreateSimpleEvent = () => {
+    // Navigate to simple event creation
+    navigate('/app/events');
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showCreateDropdown && !event.target.closest('.relative')) {
+        setShowCreateDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCreateDropdown]);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -173,10 +200,53 @@ const AdvancedEventDashboard = () => {
           <h1 className="text-2xl font-bold text-gray-900">Event Management Dashboard</h1>
           <p className="text-gray-600">Manage and track your events</p>
         </div>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Create Event</span>
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Event</span>
+          </button>
+          
+          {showCreateDropdown && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    handleCreateEvent();
+                    setShowCreateDropdown(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors flex items-center space-x-3"
+                >
+                  <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg">
+                    <Zap className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Professional Event</div>
+                    <div className="text-sm text-gray-500">Use professional templates</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    handleCreateSimpleEvent();
+                    setShowCreateDropdown(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3"
+                >
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Calendar className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Simple Event</div>
+                    <div className="text-sm text-gray-500">Basic event creation</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}

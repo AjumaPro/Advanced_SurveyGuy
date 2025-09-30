@@ -1,1 +1,0 @@
-# SurveyGuy Django Project 

@@ -1,0 +1,215 @@
+{
+  "surveyScales": {
+    "customer-satisfaction": {
+      "name": "Customer Satisfaction Scale",
+      "description": "5-point satisfaction scale with green happy to red angry faces",
+      "type": "satisfaction",
+      "emojis": [
+        { 
+          "emoji": "😊", 
+          "label": "Very Satisfied", 
+          "value": 5, 
+          "file": "survey-scales/very-satisfied.svg",
+          "color": "#00C851"
+        },
+        { 
+          "emoji": "🙂", 
+          "label": "Satisfied", 
+          "value": 4, 
+          "file": "survey-scales/satisfied.svg",
+          "color": "#4CAF50"
+        },
+        { 
+          "emoji": "😐", 
+          "label": "Neutral", 
+          "value": 3, 
+          "file": "survey-scales/neutral.svg",
+          "color": "#FFC107"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "Unsatisfied", 
+          "value": 2, 
+          "file": "survey-scales/unsatisfied.svg",
+          "color": "#F44336"
+        },
+        { 
+          "emoji": "😠", 
+          "label": "Very Unsatisfied", 
+          "value": 1, 
+          "file": "survey-scales/very-unsatisfied.svg",
+          "color": "#FF5722"
+        }
+      ]
+    },
+    "likelihood-recommendation": {
+      "name": "Likelihood to Recommend Scale",
+      "description": "10-point likelihood scale with red sad to green happy faces",
+      "type": "likelihood",
+      "scaleType": "10-point",
+      "emojis": [
+        { 
+          "emoji": "😞", 
+          "label": "1", 
+          "value": 1, 
+          "file": "survey-scales/likelihood-1-6.svg",
+          "color": "#FF5252",
+          "range": "1-6",
+          "rangeLabel": "Unlikely"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "2", 
+          "value": 2, 
+          "file": "survey-scales/likelihood-1-6.svg",
+          "color": "#FF5252",
+          "range": "1-6"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "3", 
+          "value": 3, 
+          "file": "survey-scales/likelihood-1-6.svg",
+          "color": "#FF5252",
+          "range": "1-6"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "4", 
+          "value": 4, 
+          "file": "survey-scales/likelihood-1-6.svg",
+          "color": "#FF5252",
+          "range": "1-6"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "5", 
+          "value": 5, 
+          "file": "survey-scales/likelihood-1-6.svg",
+          "color": "#FF5252",
+          "range": "1-6"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "6", 
+          "value": 6, 
+          "file": "survey-scales/likelihood-1-6.svg",
+          "color": "#FF5252",
+          "range": "1-6"
+        },
+        { 
+          "emoji": "😐", 
+          "label": "7", 
+          "value": 7, 
+          "file": "survey-scales/likelihood-7-8.svg",
+          "color": "#FFC107",
+          "range": "7-8",
+          "rangeLabel": "Neutral"
+        },
+        { 
+          "emoji": "😐", 
+          "label": "8", 
+          "value": 8, 
+          "file": "survey-scales/likelihood-7-8.svg",
+          "color": "#FFC107",
+          "range": "7-8"
+        },
+        { 
+          "emoji": "🙂", 
+          "label": "9", 
+          "value": 9, 
+          "file": "survey-scales/likelihood-9-10.svg",
+          "color": "#4CAF50",
+          "range": "9-10",
+          "rangeLabel": "Likely"
+        },
+        { 
+          "emoji": "🙂", 
+          "label": "10", 
+          "value": 10, 
+          "file": "survey-scales/likelihood-9-10.svg",
+          "color": "#4CAF50",
+          "range": "9-10"
+        }
+      ]
+    },
+    "ease-of-interaction": {
+      "name": "Ease of Interaction Scale",
+      "description": "5-point ease scale with green easy to red difficult faces",
+      "type": "ease",
+      "emojis": [
+        { 
+          "emoji": "😊", 
+          "label": "Very Easy", 
+          "value": 5, 
+          "file": "survey-scales/very-easy.svg",
+          "color": "#00C851"
+        },
+        { 
+          "emoji": "🙂", 
+          "label": "Easy", 
+          "value": 4, 
+          "file": "survey-scales/easy.svg",
+          "color": "#4CAF50"
+        },
+        { 
+          "emoji": "😐", 
+          "label": "Moderate", 
+          "value": 3, 
+          "file": "survey-scales/moderate.svg",
+          "color": "#FFC107"
+        },
+        { 
+          "emoji": "😞", 
+          "label": "Difficult", 
+          "value": 2, 
+          "file": "survey-scales/difficult.svg",
+          "color": "#F44336"
+        },
+        { 
+          "emoji": "😠", 
+          "label": "Very Difficult", 
+          "value": 1, 
+          "file": "survey-scales/very-difficult.svg",
+          "color": "#FF5722"
+        }
+      ]
+    }
+  },
+  "sampleQuestions": {
+    "satisfaction": [
+      "How satisfied are you with the experience you received?",
+      "How satisfied are you with our service?",
+      "How satisfied are you with the product quality?",
+      "How satisfied are you with our support team?",
+      "How satisfied are you with the overall experience?"
+    ],
+    "likelihood": [
+      "How likely are you to recommend us to your friends and colleagues?",
+      "How likely are you to use our service again?",
+      "How likely are you to purchase from us again?",
+      "How likely are you to refer us to others?",
+      "How likely are you to choose us over competitors?"
+    ],
+    "ease": [
+      "How easy was it to interact with us?",
+      "How easy was it to complete your task?",
+      "How easy was it to find what you were looking for?",
+      "How easy was it to get help when you needed it?",
+      "How easy was it to navigate our platform?"
+    ]
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

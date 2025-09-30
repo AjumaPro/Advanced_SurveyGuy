@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Mail, Lock, Save, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SuperAdminPlanSwitcher from '../components/SuperAdminPlanSwitcher';
 
 const Profile = () => {
   const { user, updateProfile, changePassword } = useAuth();
@@ -54,6 +55,9 @@ const Profile = () => {
 
   return (
     <div className="space-y-6">
+      {/* Super Admin Plan Switcher */}
+      <SuperAdminPlanSwitcher />
+      
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>

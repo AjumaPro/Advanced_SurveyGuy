@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, Users, MapPin, Clock, Edit, Trash2, Eye, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../utils/axios';
-import CreateEventModal from './CreateEventModal';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import EnhancedCreateEventModal from './EnhancedCreateEventModal';
 import RegistrationsModal from './RegistrationsModal';
 
 const EventManagementDashboard = () => {
+  const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -13,16 +15,27 @@ const EventManagementDashboard = () => {
   const [registrations, setRegistrations] = useState([]);
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    if (user) {
+      fetchEvents();
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchEvents = async () => {
+    if (!user) return;
+    
     try {
-      const response = await api.get('/events');
-      setEvents(response.data);
+      const response = await api.events.getEvents(user.id);
+      if (response.error) {
+        console.error('Error fetching events:', response.error);
+        toast.error('Failed to load events');
+        setEvents([]);
+      } else {
+        setEvents(response.events || []);
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
       toast.error('Failed to load events');
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -30,20 +43,31 @@ const EventManagementDashboard = () => {
 
   const fetchRegistrations = async (eventId) => {
     try {
-      const response = await api.get(`/events/${eventId}/registrations`);
-      setRegistrations(response.data);
+      const response = await api.events.getEventRegistrations(eventId);
+      if (response.error) {
+        console.error('Error fetching registrations:', response.error);
+        toast.error('Failed to load registrations');
+        setRegistrations([]);
+      } else {
+        setRegistrations(response.registrations || []);
+      }
     } catch (error) {
       console.error('Error fetching registrations:', error);
       toast.error('Failed to load registrations');
+      setRegistrations([]);
     }
   };
 
   const handleDeleteEvent = async (eventId) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        await api.delete(`/events/${eventId}`);
-        toast.success('Event deleted successfully');
-        fetchEvents();
+        const response = await api.events.deleteEvent(eventId);
+        if (response.error) {
+          toast.error(`Failed to delete event: ${response.error}`);
+        } else {
+          toast.success('Event deleted successfully');
+          fetchEvents();
+        }
       } catch (error) {
         console.error('Error deleting event:', error);
         toast.error('Failed to delete event');
@@ -287,7 +311,7 @@ const EventManagementDashboard = () => {
 
       {/* Create/Edit Event Modal */}
       {showCreateModal && (
-        <CreateEventModal
+        <EnhancedCreateEventModal
           event={selectedEvent}
           onClose={() => {
             setShowCreateModal(false);

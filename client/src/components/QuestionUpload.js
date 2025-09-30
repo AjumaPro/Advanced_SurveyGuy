@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, FileText, Download, X, CheckCircle, File } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const QuestionUpload = ({ onQuestionsUploaded, onClose }) => {
   const [uploadMethod, setUploadMethod] = useState('csv');

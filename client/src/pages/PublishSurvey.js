@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
+import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import {
   Eye,
@@ -21,24 +22,32 @@ import QRCodeShare from '../components/QRCodeShare';
 const PublishSurvey = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
 
   const fetchSurvey = React.useCallback(async () => {
+    if (!user || !id) return;
+    
     try {
       setLoading(true);
-      const response = await axios.get(`/api/surveys/${id}`);
-      setSurvey(response.data);
+      const response = await api.surveys.getSurvey(id);
+      if (response.error) {
+        toast.error('Survey not found');
+        navigate('/app/surveys');
+        return;
+      }
+      setSurvey(response.survey);
     } catch (error) {
       console.error('Error fetching survey:', error);
       toast.error('Failed to load survey');
-      navigate('/surveys');
+      navigate('/app/surveys');
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
   useEffect(() => {
     fetchSurvey();
@@ -47,12 +56,14 @@ const PublishSurvey = () => {
   const publishSurvey = async () => {
     try {
       setPublishing(true);
-      await axios.put(`/api/surveys/${id}`, {
-        ...survey,
-        status: 'published'
-      });
-      toast.success('Survey published successfully!');
-      fetchSurvey(); // Refresh survey data
+      const response = await api.surveys.publishSurvey(id);
+      if (response.error) {
+        toast.error('Failed to publish survey');
+        console.error('Error:', response.error);
+      } else {
+        toast.success('Survey published successfully!');
+        fetchSurvey(); // Refresh survey data
+      }
     } catch (error) {
       console.error('Error publishing survey:', error);
       toast.error('Failed to publish survey');
@@ -64,12 +75,14 @@ const PublishSurvey = () => {
   const unpublishSurvey = async () => {
     try {
       setPublishing(true);
-      await axios.put(`/api/surveys/${id}`, {
-        ...survey,
-        status: 'draft'
-      });
-      toast.success('Survey unpublished successfully!');
-      fetchSurvey(); // Refresh survey data
+      const response = await api.surveys.unpublishSurvey(id);
+      if (response.error) {
+        toast.error('Failed to unpublish survey');
+        console.error('Error:', response.error);
+      } else {
+        toast.success('Survey unpublished successfully!');
+        fetchSurvey(); // Refresh survey data
+      }
     } catch (error) {
       console.error('Error unpublishing survey:', error);
       toast.error('Failed to unpublish survey');

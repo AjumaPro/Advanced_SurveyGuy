@@ -1,1 +1,0 @@
-# Events app for event management 
