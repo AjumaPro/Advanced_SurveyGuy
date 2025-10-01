@@ -36,7 +36,7 @@ const Contact = () => {
       { number: '+233 24 973 9599', label: 'Primary Support', type: 'support' },
       { number: '+233 50 698 5503', label: 'Technical Support', type: 'technical' }
     ],
-    email: 'support@surveyguy.com',
+    email: 'infoajumapro@gmail.com',
     address: 'Accra, Ghana',
     hours: {
       weekdays: '9:00 AM - 6:00 PM GMT',

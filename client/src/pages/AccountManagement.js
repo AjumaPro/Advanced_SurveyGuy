@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -6,12 +6,9 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import {
   User,
-  Mail,
   Shield,
   CreditCard,
   Bell,
-  Globe,
-  Trash2,
   Edit,
   Save,
   X,
@@ -19,52 +16,29 @@ import {
   EyeOff,
   CheckCircle,
   AlertTriangle,
-  Phone,
-  MapPin,
-  Calendar,
   Download,
   Upload,
   Key,
-  Lock,
-  Unlock,
   Camera,
   Activity,
-  Clock,
   Smartphone,
   Monitor,
   Tablet,
-  Wifi,
-  WifiOff,
-  Settings,
-  Database,
   FileText,
   Archive,
-  History,
   ShieldCheck,
   QrCode,
-  Copy,
-  ExternalLink,
-  RefreshCw,
   TrendingUp,
   BarChart3,
-  PieChart,
-  Users,
-  MessageSquare,
-  Star,
-  Heart,
-  ThumbsUp,
-  Award,
-  Target,
-  Zap,
-  Crown,
-  Sparkles
+  Globe
 } from 'lucide-react';
 
 const AccountManagement = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, userProfile } = useAuth();
   const { currentPlan, isFreePlan } = useFeatureAccess();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const [editing, setEditing] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -116,28 +90,61 @@ const AccountManagement = () => {
     confirm: false
   });
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchActivityLog();
-      fetchActiveSessions();
-      fetchUsageStats();
-      calculateSecurityScore();
-      check2FAStatus();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching profile for user:', user?.id, user?.email);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      console.log('📊 Profile query result:', { data, error });
 
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create one
+        console.log('Profile not found, creating new profile...');
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            role: 'user',
+            plan: 'free',
+            is_active: true,
+            is_verified: user.email_confirmed_at ? true : false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        
+        setProfile(newProfile);
+        setFormData({
+          full_name: newProfile.full_name || '',
+          email: newProfile.email || user.email || '',
+          phone: newProfile.phone || '',
+          company: newProfile.company || '',
+          bio: newProfile.bio || '',
+          website: newProfile.website || '',
+          location: newProfile.location || '',
+          timezone: newProfile.timezone || 'UTC',
+          notifications: newProfile.notification_preferences || {
+            email: true,
+            push: true,
+            sms: false,
+            marketing: false
+          }
+        });
+      } else if (error) {
+        throw error;
+      } else {
+        // Profile exists
       setProfile(data);
       setFormData({
         full_name: data.full_name || '',
@@ -155,39 +162,395 @@ const AccountManagement = () => {
           marketing: false
         }
       });
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile');
+      
+      // If profiles table doesn't exist, create a fallback profile
+      if (error.message?.includes('relation "profiles" does not exist') || 
+          error.message?.includes('table "profiles" does not exist')) {
+        console.log('Profiles table does not exist, using fallback profile data');
+        const fallbackProfile = {
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          role: 'user',
+          plan: 'free',
+          is_active: true,
+          is_verified: user.email_confirmed_at ? true : false
+        };
+        
+        setProfile(fallbackProfile);
+        setFormData({
+          full_name: fallbackProfile.full_name || '',
+          email: fallbackProfile.email || user.email || '',
+          phone: '',
+          company: '',
+          bio: '',
+          website: '',
+          location: '',
+          timezone: 'UTC',
+          notifications: {
+            email: true,
+            push: true,
+            sms: false,
+            marketing: false
+          }
+        });
+        toast.error('Profile loaded with limited functionality. Please contact support to set up your profile.');
+      } else {
+        // Try to use userProfile from AuthContext as fallback
+        if (userProfile) {
+          console.log('🔄 Using userProfile from AuthContext as fallback');
+          setProfile(userProfile);
+          setFormData({
+            full_name: userProfile.full_name || '',
+            email: userProfile.email || user.email || '',
+            phone: userProfile.phone || '',
+            company: userProfile.company || '',
+            bio: userProfile.bio || '',
+            website: userProfile.website || '',
+            location: userProfile.location || '',
+            timezone: userProfile.timezone || 'UTC',
+            notifications: userProfile.notification_preferences || {
+              email: true,
+              push: true,
+              sms: false,
+              marketing: false
+            }
+          });
+          toast.error('Profile loaded from cache. Some features may be limited.');
+        } else {
+          toast.error('Failed to load profile');
+          setRetryCount(prev => prev + 1);
+        }
+      }
     } finally {
       setLoading(false);
+    }
+  }, [user, userProfile]);
+
+  const fetchActivityLog = useCallback(async () => {
+    try {
+      // Mock activity log - in real app, fetch from database
+      const mockActivity = [
+        {
+          id: 1,
+          action: 'Profile Updated',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          device: 'Chrome on macOS',
+          ip: '192.168.1.1'
+        },
+        {
+          id: 2,
+          action: 'Password Changed',
+          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          device: 'Safari on iOS',
+          ip: '192.168.1.2'
+        },
+        {
+          id: 3,
+          action: 'Survey Created',
+          timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+          device: 'Chrome on Windows',
+          ip: '192.168.1.3'
+        }
+      ];
+      setActivityLog(mockActivity);
+    } catch (error) {
+      console.error('Error fetching activity log:', error);
+    }
+  }, []);
+
+  const fetchActiveSessions = useCallback(async () => {
+    try {
+      // Mock active sessions
+      const mockSessions = [
+        {
+          id: 1,
+          device: 'Chrome on macOS',
+          location: 'Accra, Ghana',
+          lastActive: new Date(Date.now() - 30 * 60 * 1000),
+          current: true
+        },
+        {
+          id: 2,
+          device: 'Safari on iOS',
+          location: 'Kumasi, Ghana',
+          lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          current: false
+        }
+      ];
+      setActiveSessions(mockSessions);
+    } catch (error) {
+      console.error('Error fetching active sessions:', error);
+    }
+  }, []);
+
+  const check2FAStatus = useCallback(async () => {
+    // Mock 2FA check
+    setTwoFactorEnabled(false);
+  }, []);
+
+  const fetchUsageStats = useCallback(async () => {
+    try {
+      const { data: surveys } = await supabase
+        .from('surveys')
+        .select('id, created_at, status')
+        .eq('user_id', user.id);
+
+      const { data: responses } = await supabase
+        .from('survey_responses')
+        .select('id, submitted_at')
+        .in('survey_id', surveys?.map(s => s.id) || []);
+
+      setUsageStats({
+        totalSurveys: surveys?.length || 0,
+        publishedSurveys: surveys?.filter(s => s.status === 'published').length || 0,
+        totalResponses: responses?.length || 0,
+        responsesThisMonth: responses?.filter(r => 
+          new Date(r.submitted_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        ).length || 0
+      });
+    } catch (error) {
+      console.error('Error fetching usage stats:', error);
+    }
+  }, [user]);
+
+  const calculateSecurityScore = useCallback(() => {
+    let score = 0;
+    
+    // Email verified
+    if (user?.email_confirmed_at) score += 25;
+    
+    // Strong password (mock check)
+    if (passwordData.newPassword.length >= 8) score += 25;
+    
+    // Two-factor authentication
+    if (twoFactorEnabled) score += 30;
+    
+    // Recent password change
+    const lastPasswordChange = localStorage.getItem('lastPasswordChange');
+    if (lastPasswordChange && Date.now() - new Date(lastPasswordChange).getTime() < 90 * 24 * 60 * 60 * 1000) {
+      score += 20;
+    }
+    
+    setSecurityScore(Math.min(score, 100));
+  }, [user, passwordData.newPassword, twoFactorEnabled]);
+
+  useEffect(() => {
+    console.log('👤 User object in AccountManagement:', user);
+    console.log('👤 UserProfile object in AccountManagement:', userProfile);
+    
+    if (user) {
+      fetchProfile();
+      fetchActivityLog();
+      fetchActiveSessions();
+      fetchUsageStats();
+      calculateSecurityScore();
+      check2FAStatus();
+    } else {
+      console.log('❌ No user object found in AccountManagement');
+    }
+  }, [user, userProfile, fetchProfile, fetchUsageStats, calculateSecurityScore, fetchActivityLog, fetchActiveSessions, check2FAStatus]);
+
+  const handleRetryProfile = () => {
+    setRetryCount(0);
+    fetchProfile();
+  };
+
+  const testDatabaseConnection = async () => {
+    try {
+      console.log('🔍 Testing database connection...');
+      
+      // Test 1: Basic connection
+      const { error: testError } = await supabase
+        .from('profiles')
+        .select('count')
+        .limit(1);
+        
+      if (testError) {
+        console.error('❌ Database connection test failed:', testError);
+        toast.error(`Database connection failed: ${testError.message}`);
+        return false;
+      }
+      
+      console.log('✅ Database connection test passed');
+      
+      // Test 2: Check if user profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .eq('id', user.id)
+        .single();
+        
+      if (profileError && profileError.code === 'PGRST116') {
+        console.log('⚠️ User profile does not exist, attempting to create...');
+        toast.warning('Profile not found, attempting to create one...');
+        return false;
+      } else if (profileError) {
+        console.error('❌ Profile access error:', profileError);
+        toast.error(`Profile access error: ${profileError.message}`);
+        return false;
+      }
+      
+      console.log('✅ Profile access test passed:', profileData);
+      toast.success('Database connection and profile access working correctly!');
+      return true;
+      
+    } catch (error) {
+      console.error('💥 Database test failed:', error);
+      toast.error(`Database test failed: ${error.message}`);
+      return false;
     }
   };
 
   const handleSaveProfile = async () => {
     try {
-      const { error } = await supabase
+      console.log('💾 Attempting to save profile for user:', user?.id);
+      console.log('📝 Profile data to save:', formData);
+      
+      // Validate required fields
+      if (!formData.full_name || formData.full_name.trim() === '') {
+        toast.error('Full name is required');
+        return;
+      }
+
+      // Show loading state
+      toast.loading('Saving profile...', { id: 'profile-save' });
+      
+      const { data, error } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
-          company: formData.company,
-          bio: formData.bio,
-          website: formData.website,
-          location: formData.location,
-          timezone: formData.timezone,
-          notification_preferences: formData.notifications,
+          full_name: formData.full_name.trim(),
+          phone: formData.phone?.trim() || null,
+          company: formData.company?.trim() || null,
+          bio: formData.bio?.trim() || null,
+          website: formData.website?.trim() || null,
+          location: formData.location?.trim() || null,
+          timezone: formData.timezone || 'UTC',
+          notification_preferences: formData.notifications || {
+            email: true,
+            push: true,
+            sms: false,
+            marketing: false
+          },
           updated_at: new Date().toISOString()
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
-      if (error) throw error;
+      console.log('💾 Save result:', { data, error });
 
-      toast.success('Profile updated successfully');
-      setEditing(false);
-      fetchProfile();
+      if (error) {
+        console.error('❌ Profile save error details:', error);
+        toast.dismiss('profile-save');
+        
+        // Handle specific error cases
+        if (error.message?.includes('relation "profiles" does not exist') || 
+            error.message?.includes('table "profiles" does not exist')) {
+          toast.error('Database table not found. Please run the setup script.');
+          setEditing(false);
+          return;
+        }
+        
+        if (error.message?.includes('permission denied') || error.message?.includes('insufficient_privilege')) {
+          toast.error('Permission denied. Please check your account permissions.');
+          setEditing(false);
+          return;
+        }
+        
+        if (error.code === 'PGRST116') {
+          toast.error('Profile not found. Creating new profile...');
+          // Try to create a new profile
+          await createNewProfile();
+          return;
+        }
+        
+        if (error.message?.includes('infinite recursion')) {
+          toast.error('Database policy error. Please run the recursion fix script.');
+          setEditing(false);
+          return;
+        }
+        
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        console.log('✅ Profile updated successfully:', data[0]);
+        toast.dismiss('profile-save');
+        toast.success('Profile updated successfully! 🎉');
+        setEditing(false);
+        setProfile(data[0]);
+        // Update form data with the saved data
+        setFormData({
+          ...formData,
+          ...data[0],
+          notifications: data[0].notification_preferences || formData.notifications
+        });
+      } else {
+        console.log('⚠️ No data returned from update');
+        toast.dismiss('profile-save');
+        toast.error('Profile update completed but no data returned');
+        setEditing(false);
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      console.error('💥 Unexpected error updating profile:', error);
+      toast.dismiss('profile-save');
+      toast.error(`Failed to update profile: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const createNewProfile = async () => {
+    try {
+      console.log('🆕 Creating new profile for user:', user?.id);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: formData.full_name.trim(),
+          phone: formData.phone?.trim() || null,
+          company: formData.company?.trim() || null,
+          bio: formData.bio?.trim() || null,
+          website: formData.website?.trim() || null,
+          location: formData.location?.trim() || null,
+          timezone: formData.timezone || 'UTC',
+          notification_preferences: formData.notifications || {
+            email: true,
+            push: true,
+            sms: false,
+            marketing: false
+          },
+          role: 'user',
+          plan: 'free',
+          is_active: true,
+          is_verified: user.email_confirmed_at ? true : false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Profile creation error:', error);
+        toast.error('Failed to create profile. Please try again.');
+        return;
+      }
+
+      console.log('✅ Profile created successfully:', data);
+      toast.success('Profile created and updated successfully! 🎉');
+      setEditing(false);
+      setProfile(data);
+      setFormData({
+        ...formData,
+        ...data,
+        notifications: data.notification_preferences || formData.notifications
+      });
+    } catch (error) {
+      console.error('💥 Error creating profile:', error);
+      toast.error(`Failed to create profile: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -241,114 +604,8 @@ const AccountManagement = () => {
     }
   };
 
-  // Enhanced functions
-  const fetchActivityLog = async () => {
-    try {
-      // Mock activity log - in real app, fetch from database
-      const mockActivity = [
-        {
-          id: 1,
-          action: 'Profile Updated',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          device: 'Chrome on macOS',
-          ip: '192.168.1.1'
-        },
-        {
-          id: 2,
-          action: 'Password Changed',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          device: 'Safari on iOS',
-          ip: '192.168.1.2'
-        },
-        {
-          id: 3,
-          action: 'Survey Created',
-          timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-          device: 'Chrome on Windows',
-          ip: '192.168.1.3'
-        }
-      ];
-      setActivityLog(mockActivity);
-    } catch (error) {
-      console.error('Error fetching activity log:', error);
-    }
-  };
 
-  const fetchActiveSessions = async () => {
-    try {
-      // Mock active sessions
-      const mockSessions = [
-        {
-          id: 1,
-          device: 'Chrome on macOS',
-          location: 'Accra, Ghana',
-          lastActive: new Date(Date.now() - 30 * 60 * 1000),
-          current: true
-        },
-        {
-          id: 2,
-          device: 'Safari on iOS',
-          location: 'Kumasi, Ghana',
-          lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          current: false
-        }
-      ];
-      setActiveSessions(mockSessions);
-    } catch (error) {
-      console.error('Error fetching active sessions:', error);
-    }
-  };
 
-  const fetchUsageStats = async () => {
-    try {
-      const { data: surveys } = await supabase
-        .from('surveys')
-        .select('id, created_at, status')
-        .eq('user_id', user.id);
-
-      const { data: responses } = await supabase
-        .from('survey_responses')
-        .select('id, submitted_at')
-        .in('survey_id', surveys?.map(s => s.id) || []);
-
-      setUsageStats({
-        totalSurveys: surveys?.length || 0,
-        publishedSurveys: surveys?.filter(s => s.status === 'published').length || 0,
-        totalResponses: responses?.length || 0,
-        responsesThisMonth: responses?.filter(r => 
-          new Date(r.submitted_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        ).length || 0
-      });
-    } catch (error) {
-      console.error('Error fetching usage stats:', error);
-    }
-  };
-
-  const calculateSecurityScore = () => {
-    let score = 0;
-    
-    // Email verified
-    if (user?.email_confirmed_at) score += 25;
-    
-    // Strong password (mock check)
-    if (passwordData.newPassword.length >= 8) score += 25;
-    
-    // Two-factor authentication
-    if (twoFactorEnabled) score += 30;
-    
-    // Recent password change
-    const lastPasswordChange = localStorage.getItem('lastPasswordChange');
-    if (lastPasswordChange && Date.now() - new Date(lastPasswordChange).getTime() < 90 * 24 * 60 * 60 * 1000) {
-      score += 20;
-    }
-    
-    setSecurityScore(Math.min(score, 100));
-  };
-
-  const check2FAStatus = async () => {
-    // Mock 2FA check
-    setTwoFactorEnabled(false);
-  };
 
   const handleAvatarUpload = (event) => {
     const file = event.target.files[0];
@@ -372,7 +629,7 @@ const AccountManagement = () => {
       const fileExt = avatarFile.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('avatars')
         .upload(fileName, avatarFile);
       
@@ -504,6 +761,34 @@ const AccountManagement = () => {
     );
   }
 
+  if (!profile && retryCount > 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile Loading Failed</h2>
+          <p className="text-gray-600 mb-4">
+            We couldn't load your profile information. This might be a temporary issue.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={handleRetryProfile}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={testDatabaseConnection}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Test Database Connection
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -546,13 +831,25 @@ const AccountManagement = () => {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
                     {!editing ? (
+                      <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => setEditing(true)}
+                          onClick={() => {
+                            console.log('🖊️ Starting profile edit mode');
+                            setEditing(true);
+                          }}
                         className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <Edit className="w-4 h-4" />
                         <span>Edit Profile</span>
                       </button>
+                        <button
+                          onClick={testDatabaseConnection}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Test DB</span>
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex items-center space-x-2">
                         <button

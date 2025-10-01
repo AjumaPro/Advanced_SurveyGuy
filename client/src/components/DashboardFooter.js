@@ -75,7 +75,7 @@ const DashboardFooter = () => {
         { name: 'Twitter', href: 'https://twitter.com/surveyguy', icon: <Twitter className="w-4 h-4" />, external: true },
         { name: 'LinkedIn', href: 'https://linkedin.com/company/surveyguy', icon: <Linkedin className="w-4 h-4" />, external: true },
         { name: 'GitHub', href: 'https://github.com/surveyguy', icon: <Github className="w-4 h-4" />, external: true },
-        { name: 'Email', href: 'mailto:support@surveyguy.com', icon: <Mail className="w-4 h-4" /> },
+        { name: 'Email', href: 'mailto:infoajumapro@gmail.com', icon: <Mail className="w-4 h-4" /> },
         { name: 'Phone', href: 'tel:+1-555-SURVEY', icon: <Phone className="w-4 h-4" /> }
       ]
     }

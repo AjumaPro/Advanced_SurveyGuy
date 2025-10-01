@@ -27,7 +27,7 @@ Successfully implemented comprehensive Account Management and Contact pages with
 - **Contact Information Display**:
   - Primary Support: +233 24 973 9599
   - Technical Support: +233 50 698 5503
-  - Email: support@surveyguy.com
+  - Email: infoajumapro@gmail.com
 - **Interactive Contact Form**:
   - Category selection (General, Support, Bug Report, Feature Request, etc.)
   - Priority levels (Low, Medium, High, Urgent)
@@ -79,7 +79,7 @@ Added new routes:
 ### Contact Information Integration
 - **Primary Support**: +233 24 973 9599 (General inquiries, account issues)
 - **Technical Support**: +233 50 698 5503 (Technical problems, bug reports)
-- **Email Support**: support@surveyguy.com (All inquiries, 24/7)
+- **Email Support**: infoajumapro@gmail.com (All inquiries, 24/7)
 - **Business Hours**: Clearly displayed with GMT timezone
 - **Emergency Support**: Highlighted for urgent issues
 

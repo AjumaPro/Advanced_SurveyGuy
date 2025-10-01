@@ -790,7 +790,7 @@ See the examples folder for more detailed examples.
 
 ## Support
 
-For support, please contact support@surveyguy.com`,
+For support, please contact infoajumapro@gmail.com`,
 
       python: `# SurveyGuy Python SDK
 
@@ -834,7 +834,7 @@ See the examples folder for more detailed examples.
 
 ## Support
 
-For support, please contact support@surveyguy.com`,
+For support, please contact infoajumapro@gmail.com`,
 
       php: `# SurveyGuy PHP SDK
 
@@ -880,7 +880,7 @@ See the examples folder for more detailed examples.
 
 ## Support
 
-For support, please contact support@surveyguy.com`,
+For support, please contact infoajumapro@gmail.com`,
 
       node: `# SurveyGuy Node.js SDK
 
@@ -924,7 +924,7 @@ See the examples folder for more detailed examples.
 
 ## Support
 
-For support, please contact support@surveyguy.com`,
+For support, please contact infoajumapro@gmail.com`,
 
       curl: `# SurveyGuy API cURL Examples
 
@@ -954,7 +954,7 @@ For detailed API documentation, visit https://docs.surveyguy.com
 
 ## Support
 
-For support, please contact support@surveyguy.com`
+For support, please contact infoajumapro@gmail.com`
     };
 
     return readmes[language] || readmes.javascript;

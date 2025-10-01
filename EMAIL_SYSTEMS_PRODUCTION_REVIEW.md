@@ -43,7 +43,7 @@ Supabase provides built-in email templates for:
 **Current Issues:**
 1. **Default SMTP:** Using Supabase's default SMTP (limited to 3 emails/hour in free tier)
 2. **No Custom Branding:** Emails use default Supabase templates
-3. **No Custom Domain:** Emails sent from `noreply@supabase.io`
+3. **Using Gmail:** Emails sent from `infoajumapro@gmail.com` (Gmail daily limits apply)
 4. **Rate Limiting:** Severely limited in production
 
 ---
@@ -203,7 +203,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendContactEmail = async (data) => {
   await resend.emails.send({
-    from: 'support@surveyguy.com',
+    from: 'SurveyGuy <infoajumapro@gmail.com>',
     to: ['infoajumapro@gmail.com'],
     reply_to: data.email,
     subject: `Contact Form: ${data.subject}`,
@@ -296,7 +296,7 @@ serve(async (req) => {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: 'SurveyGuy Support <noreply@surveyguy.com>',
+      from: 'SurveyGuy Support <infoajumapro@gmail.com>',
       to: ['infoajumapro@gmail.com'],
       reply_to: email,
       subject: `[${category.toUpperCase()}] ${subject}`,
@@ -409,7 +409,7 @@ serve(async (req) => {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: 'SurveyGuy Events <events@surveyguy.com>',
+      from: 'SurveyGuy Events <infoajumapro@gmail.com>',
       to: [registration.email],
       subject: `Registration Confirmed: ${event.title}`,
       html: `
@@ -487,10 +487,10 @@ Add to `.env` and Supabase Secrets:
 RESEND_API_KEY=re_xxxxxxxxxxxxx
 
 # Email Addresses
-SUPPORT_EMAIL=support@surveyguy.com
+SUPPORT_EMAIL=infoajumapro@gmail.com
 CONTACT_EMAIL=infoajumapro@gmail.com
-EVENTS_EMAIL=events@surveyguy.com
-NOREPLY_EMAIL=noreply@surveyguy.com
+EVENTS_EMAIL=infoajumapro@gmail.com
+NOREPLY_EMAIL=infoajumapro@gmail.com
 
 # Optional: SendGrid (if using as backup)
 SENDGRID_API_KEY=SG.xxxxxxxxxxxxx
