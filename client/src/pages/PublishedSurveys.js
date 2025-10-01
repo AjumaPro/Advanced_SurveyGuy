@@ -23,8 +23,10 @@ import {
   CheckCircle,
   FileText,
   Archive,
-  QrCode
+  QrCode,
+  Mail
 } from 'lucide-react';
+import SendSurveyInvitation from '../components/SendSurveyInvitation';
 
 const PublishedSurveys = () => {
   const { user } = useAuth();
@@ -41,6 +43,8 @@ const PublishedSurveys = () => {
   const [selectedSurveyForShare, setSelectedSurveyForShare] = useState(null);
   const [useSimpleModal, setUseSimpleModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [invitationModalOpen, setInvitationModalOpen] = useState(false);
+  const [selectedSurveyForInvite, setSelectedSurveyForInvite] = useState(null);
 
   const fetchPublishedSurveys = useCallback(async (showRefreshToast = false) => {
     if (!user) return;
@@ -220,6 +224,17 @@ const PublishedSurveys = () => {
       setShareModalOpen(true);
       setUseSimpleModal(true);
     }
+  };
+
+  const handleSendInvitations = (survey) => {
+    setSelectedSurveyForInvite(survey);
+    setInvitationModalOpen(true);
+  };
+
+  const handleInvitationSuccess = (data) => {
+    console.log('Invitations sent:', data);
+    toast.success(`Successfully sent ${data.sent} invitation(s)!`);
+    fetchPublishedSurveys(true); // Refresh surveys
   };
 
   const downloadQRCode = (survey) => {
@@ -524,24 +539,34 @@ const PublishedSurveys = () => {
                   </div>
 
                   {/* Primary Actions */}
-                  <div className="flex items-center space-x-2 mb-3">
+                  <div className="space-y-2 mb-3">
                     <button
-                      onClick={() => handleShareSurvey(survey)}
-                      className="flex items-center space-x-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm flex-1 justify-center"
+                      onClick={() => handleSendInvitations(survey)}
+                      className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-sm font-medium"
                     >
-                      <Share2 className="w-4 h-4" />
-                      <span>Share & QR</span>
+                      <Mail className="w-4 h-4" />
+                      <span>Send to Respondents</span>
                     </button>
                     
-                    <a
-                      href={getSurveyUrlLocal(survey.id)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm flex-1 justify-center"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      <span>View Live</span>
-                    </a>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleShareSurvey(survey)}
+                        className="flex items-center space-x-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm flex-1 justify-center"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        <span>Share & QR</span>
+                      </button>
+                      
+                      <a
+                        href={getSurveyUrlLocal(survey.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm flex-1 justify-center"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>View Live</span>
+                      </a>
+                    </div>
                   </div>
 
                   {/* Quick Actions */}
@@ -636,6 +661,19 @@ const PublishedSurveys = () => {
               />
             )}
           </>
+        )}
+
+        {/* Send Invitation Modal */}
+        {selectedSurveyForInvite && invitationModalOpen && (
+          <SendSurveyInvitation
+            survey={selectedSurveyForInvite}
+            isOpen={invitationModalOpen}
+            onClose={() => {
+              setInvitationModalOpen(false);
+              setSelectedSurveyForInvite(null);
+            }}
+            onSuccess={handleInvitationSuccess}
+          />
         )}
       </div>
     </div>

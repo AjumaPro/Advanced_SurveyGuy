@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProfessionalLayout from './components/ProfessionalLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 import PlanProtectedRoute from './components/PlanProtectedRoute';
+import { AdminOnly } from './utils/adminUtils';
 
 // Core components that should load immediately
 import Landing from './pages/Landing';
@@ -142,11 +143,13 @@ function AppRoutes() {
       {/* Landing Page (Public) - Load immediately */}
       <Route path="/" element={<Landing />} />
       
-      {/* Test Routes */}
+      {/* Test Routes - Super Admin Only */}
       <Route path="/wizard-test" element={
-        <LazyRoute>
-          <WizardTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <WizardTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       
       {/* Authentication Routes - Load immediately */}
@@ -208,41 +211,55 @@ function AppRoutes() {
         </LazyRoute>
       } />
       
-      {/* Test/Debug Routes - Lazy load */}
+      {/* Test/Debug Routes - Super Admin Only */}
       <Route path="/test" element={
-        <LazyRoute>
-          <TestConnection />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <TestConnection />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/simple" element={
-        <LazyRoute>
-          <SimpleTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <SimpleTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/auth-test" element={
-        <LazyRoute>
-          <AuthTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <AuthTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/network-test" element={
-        <LazyRoute>
-          <NetworkTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <NetworkTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/simple-network-test" element={
-        <LazyRoute>
-          <SimpleNetworkTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <SimpleNetworkTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/login-test" element={
-        <LazyRoute>
-          <LoginTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <LoginTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/supabase-test" element={
-        <LazyRoute>
-          <SupabaseConnectionTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <SupabaseConnectionTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/database-inspector" element={
         <LazyRoute>

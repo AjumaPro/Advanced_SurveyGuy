@@ -632,6 +632,23 @@ export const responseAPI = {
     }
   },
 
+  // Get survey responses
+  async getSurveyResponses(surveyId) {
+    try {
+      const { data, error } = await supabase
+        .from('survey_responses')
+        .select('*')
+        .eq('survey_id', surveyId)
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+      return { data: data || [], error: null };
+    } catch (error) {
+      console.error('Error fetching survey responses:', error);
+      return { data: [], error: error.message };
+    }
+  },
+
   // Validate survey response
   validateResponse(survey, responses) {
     const errors = {};

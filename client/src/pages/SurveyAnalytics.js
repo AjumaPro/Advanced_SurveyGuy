@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import api from '../services/api';
 import {
   Download,
   PieChart,
@@ -32,14 +32,35 @@ const SurveyAnalytics = () => {
   const fetchAnalytics = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/analytics/${id}`);
-      setAnalytics(response.data);
-      if (response.data.questions && response.data.questions.length > 0) {
-        setSelectedQuestion(response.data.questions[0]);
+      const response = await api.analytics.getSurveyAnalytics(id);
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      setAnalytics(response);
+      if (response.questions && response.questions.length > 0) {
+        setSelectedQuestion(response.questions[0]);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics');
+      
+      // Fallback to basic survey data if analytics fail
+      try {
+        const surveyResponse = await api.surveys.getSurvey(id);
+        if (surveyResponse.survey) {
+          const fallbackAnalytics = {
+            survey_title: surveyResponse.survey.title,
+            total_responses: 0,
+            completion_rate: 0,
+            questions: surveyResponse.survey.questions || []
+          };
+          setAnalytics(fallbackAnalytics);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -52,17 +73,27 @@ const SurveyAnalytics = () => {
   const exportResponses = async (format = 'csv') => {
     try {
       setExporting(true);
-      const response = await axios.get(`/api/responses/export/${id}?format=${format}`, {
-        responseType: 'blob'
-      });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Get survey responses data
+      const responses = await api.responses.getSurveyResponses(id);
+      
+      if (responses.error) {
+        throw new Error(responses.error);
+      }
+      
+      // Convert to CSV format
+      const csvData = convertToCSV(responses.data || []);
+      
+      // Create and download file
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `survey_${id}_responses.${format}`);
+      link.setAttribute('download', `survey_${id}_responses.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
       
       toast.success('Export completed successfully');
     } catch (error) {
@@ -71,6 +102,43 @@ const SurveyAnalytics = () => {
     } finally {
       setExporting(false);
     }
+  };
+
+  const convertToCSV = (responses) => {
+    if (!responses || responses.length === 0) {
+      return 'No responses available';
+    }
+    
+    // Get headers from first response
+    const headers = ['Response ID', 'Submitted At', 'Completion Time'];
+    const firstResponse = responses[0];
+    
+    if (firstResponse.responses) {
+      Object.keys(firstResponse.responses).forEach(key => {
+        headers.push(`Question ${key}`);
+      });
+    }
+    
+    // Create CSV rows
+    const rows = [headers.join(',')];
+    
+    responses.forEach(response => {
+      const row = [
+        response.id || '',
+        response.submitted_at || '',
+        response.completion_time || ''
+      ];
+      
+      if (response.responses) {
+        Object.values(response.responses).forEach(value => {
+          row.push(`"${value}"`);
+        });
+      }
+      
+      rows.push(row.join(','));
+    });
+    
+    return rows.join('\n');
   };
 
   const copyAnalyticsLink = async () => {
