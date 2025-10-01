@@ -73,13 +73,32 @@ const Contact = () => {
     setSubmitting(true);
 
     try {
-      // Simulate form submission
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Import supabase client dynamically
+      const { supabase } = await import('../lib/supabase');
       
-      console.log('Contact form submitted:', formData);
+      // Call Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          category: formData.category,
+          priority: formData.priority
+        }
+      });
+
+      if (error) {
+        console.error('Error submitting contact form:', error);
+        throw new Error(error.message || 'Failed to send message');
+      }
+
+      console.log('Contact form submitted successfully:', data);
       
       toast.success('Message sent successfully! We\'ll get back to you soon.');
       setSubmitted(true);
+      
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -90,7 +109,7 @@ const Contact = () => {
       });
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast.error('Failed to send message. Please try again.');
+      toast.error(error.message || 'Failed to send message. Please try again.');
     } finally {
       setSubmitting(false);
     }
