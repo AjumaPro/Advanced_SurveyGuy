@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import InvoiceManager from '../components/InvoiceManager';
 import BillingAnalytics from '../components/BillingAnalytics';
+import PaystackPayment from '../components/PaystackPayment';
 import {
   CreditCard,
   Download,
@@ -55,6 +56,8 @@ const Billing = () => {
   const [historyFilter, setHistoryFilter] = useState('all'); // all, completed, pending, failed
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // desc, asc
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlanForPayment, setSelectedPlanForPayment] = useState(null);
 
   // Handle plan upgrades
   const handleUpgrade = async (planType) => {
@@ -79,20 +82,12 @@ const Billing = () => {
           }, 1000);
         }
       } else {
-        // Regular users go through payment process
-        toast.success(`Initiating upgrade to ${planType} plan...`);
-        
-        // In a real implementation, this would:
-        // 1. Create a checkout session with your payment processor
-        // 2. Redirect to payment page
-        // 3. Handle successful payment callback
-        // 4. Update user's plan in database
-        
-        // For now, simulate the upgrade process
-        setTimeout(() => {
-          toast.success(`Successfully upgraded to ${planType} plan!`);
-          window.location.reload();
-        }, 2000);
+        // Regular users go through Paystack payment
+        console.log('💳 Initiating Paystack payment for:', planType);
+        setSelectedPlanForPayment({ plan: planType, cycle: billingCycle });
+        setShowPaymentModal(true);
+        setLoading(false);
+        return; // Don't continue - payment modal will handle
       }
       
     } catch (error) {
@@ -1300,6 +1295,33 @@ const Billing = () => {
           </div>
         )}
       </div>
+
+      {/* Paystack Payment Modal */}
+      {showPaymentModal && selectedPlanForPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full">
+            <PaystackPayment
+              plan={selectedPlanForPayment.plan}
+              billingCycle={selectedPlanForPayment.cycle}
+              userEmail={user.email}
+              userId={user.id}
+              onSuccess={(reference) => {
+                console.log('Payment successful:', reference);
+                setShowPaymentModal(false);
+                setSelectedPlanForPayment(null);
+                toast.success('Plan upgraded successfully! Reloading...');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              }}
+              onCancel={() => {
+                setShowPaymentModal(false);
+                setSelectedPlanForPayment(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
