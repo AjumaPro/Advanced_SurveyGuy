@@ -277,6 +277,82 @@ export const questionValidationRules = {
       
       return errors;
     }
+  },
+
+  scale: {
+    required: ['title', 'min', 'max'],
+    optional: ['description', 'step', 'minLabel', 'maxLabel', 'labels'],
+    validate: (question) => {
+      const errors = {};
+      
+      if (!question.title?.trim()) {
+        errors.title = 'Question title is required';
+      }
+      
+      if (question.settings?.min === undefined || question.settings?.max === undefined) {
+        errors.range = 'Min and max values are required';
+      }
+      
+      if (question.settings?.min !== undefined && question.settings?.max !== undefined) {
+        if (question.settings.min >= question.settings.max) {
+          errors.min = 'Minimum must be less than maximum';
+        }
+      }
+      
+      return errors;
+    }
+  },
+
+  ranking: {
+    required: ['title', 'options'],
+    optional: ['description', 'maxRank'],
+    validate: (question) => {
+      const errors = {};
+      
+      if (!question.title?.trim()) {
+        errors.title = 'Question title is required';
+      }
+      
+      if (!question.settings?.options || question.settings.options.length < 2) {
+        errors.options = 'At least 2 options required for ranking';
+      }
+      
+      if (question.settings?.maxRank && question.settings?.options) {
+        if (question.settings.maxRank > question.settings.options.length) {
+          errors.maxRank = 'Max rank cannot exceed number of options';
+        }
+      }
+      
+      return errors;
+    }
+  },
+
+  yes_no: {
+    required: ['title'],
+    optional: ['description', 'yesLabel', 'noLabel', 'allowNA', 'naLabel'],
+    validate: (question) => {
+      const errors = {};
+      
+      if (!question.title?.trim()) {
+        errors.title = 'Question title is required';
+      }
+      
+      return errors;
+    }
+  },
+
+  nps: {
+    required: ['title'],
+    optional: ['description', 'minLabel', 'maxLabel', 'question'],
+    validate: (question) => {
+      const errors = {};
+      
+      if (!question.title?.trim()) {
+        errors.title = 'Question title is required';
+      }
+      
+      return errors;
+    }
   }
 };
 

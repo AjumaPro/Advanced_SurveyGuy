@@ -145,7 +145,7 @@ function AppRoutes() {
       
       {/* Test Routes - Super Admin Only */}
       <Route path="/wizard-test" element={
-        <AdminOnly superAdminOnly={true}>
+        <AdminOnly superAdminOnly={true} featureName="enableTestRoutes">
           <LazyRoute>
             <WizardTest />
           </LazyRoute>
@@ -262,7 +262,7 @@ function AppRoutes() {
         </AdminOnly>
       } />
       <Route path="/database-inspector" element={
-        <AdminOnly superAdminOnly={true}>
+        <AdminOnly superAdminOnly={true} featureName="enableDatabaseInspector">
           <LazyRoute>
             <DatabaseInspector />
           </LazyRoute>
@@ -297,7 +297,7 @@ function AppRoutes() {
         </AdminOnly>
       } />
       <Route path="/survey-debugger" element={
-        <AdminOnly superAdminOnly={true}>
+        <AdminOnly superAdminOnly={true} featureName="enableSurveyDebugger">
           <LazyRoute>
             <SurveyDebugger />
           </LazyRoute>

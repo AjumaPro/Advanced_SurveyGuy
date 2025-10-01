@@ -497,6 +497,23 @@ export const QUESTION_TYPES = {
         required: false
       }
     }
+  },
+  yes_no: {
+    type: 'yes_no',
+    name: 'Yes/No',
+    description: 'Simple yes or no question',
+    category: 'Choice',
+    icon: '✓',
+    planRequired: null,
+    settings: {
+      yesLabel: 'Yes',
+      noLabel: 'No',
+      allowNA: false,
+      naLabel: 'Not Applicable',
+      validation: {
+        required: false
+      }
+    }
   }
 };
 

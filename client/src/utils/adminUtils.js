@@ -4,6 +4,7 @@
  */
 
 import { useAuth } from '../contexts/AuthContext';
+import { isFeatureEnabled } from '../config/production';
 
 /**
  * Check if user is super admin
@@ -64,8 +65,13 @@ export const useAdminStatus = () => {
  * @param {React.ReactNode} props.fallback - Fallback content for non-admin users
  * @returns {React.ReactNode} - Rendered content based on admin status
  */
-export const AdminOnly = ({ children, superAdminOnly = false, fallback = null }) => {
+export const AdminOnly = ({ children, superAdminOnly = false, fallback = null, featureName = null }) => {
   const { isAdmin, isSuperAdmin } = useAdminStatus();
+  
+  // Check if feature is enabled in production config
+  if (featureName && !isFeatureEnabled(featureName)) {
+    return fallback;
+  }
   
   const hasAccess = superAdminOnly ? isSuperAdmin : isAdmin;
   
@@ -78,7 +84,7 @@ export const AdminOnly = ({ children, superAdminOnly = false, fallback = null })
  * @param {boolean} superAdminOnly - If true, requires super admin access
  * @returns {boolean} - True if feature should be enabled
  */
-export const isFeatureEnabled = (featureName, superAdminOnly = false) => {
+export const isFeatureEnabledForAdmin = (featureName, superAdminOnly = false) => {
   // In production, only enable for super admins
   if (process.env.NODE_ENV === 'production') {
     // You would need to get user context here, but for utility function,

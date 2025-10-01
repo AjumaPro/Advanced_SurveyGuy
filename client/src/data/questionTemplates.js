@@ -170,12 +170,15 @@ export const questionTemplates = {
     {
       id: 'event-recommendation',
       name: 'Event Recommendation',
-      type: 'thumbs',
+      type: 'yes_no',
       title: 'Would you recommend this event to colleagues?',
       description: 'Simple recommendation question',
-      settings: { labels: { up: 'Yes, I would recommend', down: 'No, I would not recommend' } },
+      settings: { 
+        yesLabel: 'Yes, I would recommend',
+        noLabel: 'No, I would not recommend'
+      },
       category: 'event',
-      tags: ['recommendation', 'simple', 'thumbs']
+      tags: ['recommendation', 'simple', 'yes-no']
     }
   ],
 
@@ -194,12 +197,22 @@ export const questionTemplates = {
     {
       id: 'learning-objectives',
       name: 'Learning Objectives Achievement',
-      type: 'likert',
+      type: 'scale',
       title: 'The course helped me achieve the stated learning objectives',
       description: 'Measure learning objective achievement',
       settings: { 
-        points: 5, 
-        labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'] 
+        min: 1,
+        max: 5,
+        step: 1,
+        minLabel: 'Strongly Disagree',
+        maxLabel: 'Strongly Agree',
+        labels: {
+          1: 'Strongly Disagree',
+          2: 'Disagree',
+          3: 'Neutral',
+          4: 'Agree',
+          5: 'Strongly Agree'
+        }
       },
       category: 'education',
       tags: ['objectives', 'learning', 'achievement']
