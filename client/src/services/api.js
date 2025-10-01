@@ -192,7 +192,7 @@ export const surveyAPI = {
   // Get surveys by status
   async getSurveysByStatus(userId, status, options = {}) {
     try {
-      console.log('🔍 Fetching surveys by status:', { userId, status, options });
+      // Debug logging removed for production
       
       // First try simple query without joins
       let query = supabase
@@ -209,17 +209,17 @@ export const surveyAPI = {
       const { data, error } = await query;
       
       if (error) {
-        console.error('❌ Simple query failed:', error);
+        // Error logging handled by error return
         throw error;
       }
 
-      console.log('✅ Simple query successful:', data?.length || 0, 'surveys found');
+      // Success logging removed for production
 
       // Try to get response counts separately
       let surveysWithCounts = data || [];
       if (data && data.length > 0) {
         try {
-          console.log('🔄 Attempting to fetch response counts...');
+          // Fetching response counts
           
           for (let survey of surveysWithCounts) {
             try {
@@ -231,25 +231,25 @@ export const surveyAPI = {
               if (!countError) {
                 survey.responseCount = count || 0;
               } else {
-                console.warn('⚠️ Could not get response count for survey:', survey.id);
+                // Could not get response count
                 survey.responseCount = 0;
               }
             } catch (countException) {
-              console.warn('⚠️ Exception getting response count:', countException);
+              // Exception getting response count
               survey.responseCount = 0;
             }
           }
           
-          console.log('✅ Response counts added successfully');
+          // Response counts added successfully
         } catch (responseCountError) {
-          console.warn('⚠️ Could not fetch response counts:', responseCountError);
+          // Could not fetch response counts
           // Continue without response counts
         }
       }
 
       return { surveys: surveysWithCounts, error: null };
     } catch (error) {
-      console.error('💥 Error fetching surveys by status:', error);
+      // Error fetching surveys by status
       return { surveys: [], error: error.message };
     }
   },
@@ -300,13 +300,11 @@ export const surveyAPI = {
 export const responseAPI = {
   // Submit survey response with fallback methods
   async submitResponse(surveyId, responseData) {
-    console.log('🚀 Starting survey submission...');
-    console.log('Survey ID:', surveyId);
-    console.log('Response Data:', responseData);
+    // Starting survey submission
 
     try {
       // Method 1: Try standard insertion
-      console.log('📝 Attempting standard submission...');
+      // Attempting standard submission
       
       const responseRecord = {
         survey_id: surveyId,
@@ -325,7 +323,7 @@ export const responseAPI = {
         responseRecord.ip_address = responseData.ipAddress;
       }
 
-      console.log('📋 Prepared record:', responseRecord);
+      // Prepared response record
 
       const { data, error } = await supabase
         .from('survey_responses')
@@ -334,10 +332,10 @@ export const responseAPI = {
         .single();
 
       if (error) {
-        console.error('❌ Standard submission failed:', error);
+        // Standard submission failed
         
         // Method 2: Try with minimal data
-        console.log('🔄 Trying minimal submission...');
+        // Trying minimal submission
         const minimalRecord = {
           survey_id: surveyId,
           responses: responseData.responses,
@@ -351,10 +349,10 @@ export const responseAPI = {
           .single();
 
         if (minimalError) {
-          console.error('❌ Minimal submission also failed:', minimalError);
+          // Minimal submission also failed
           
           // Method 3: Try creating table first, then insert
-          console.log('🛠️ Attempting to create table and retry...');
+          // Attempting to create table and retry
           
           try {
             // Try to create the table structure
@@ -371,19 +369,19 @@ export const responseAPI = {
               throw retryError;
             }
 
-            console.log('✅ Retry submission successful:', retryData);
+            // Retry submission successful
             
             // Update analytics after successful submission
             await this.updateAnalyticsOnResponse(surveyId, retryData);
             
             return { response: retryData, error: null };
           } catch (tableError) {
-            console.error('❌ Table creation/retry failed:', tableError);
+            // Table creation/retry failed
             throw minimalError; // Return the original error
           }
         }
 
-        console.log('✅ Minimal submission successful:', minimalData);
+        // Minimal submission successful
         
         // Update analytics after successful submission
         await this.updateAnalyticsOnResponse(surveyId, minimalData);
@@ -391,7 +389,7 @@ export const responseAPI = {
         return { response: minimalData, error: null };
       }
 
-      console.log('✅ Standard submission successful:', data);
+      // Standard submission successful
       
       // Update analytics after successful submission
       await this.updateAnalyticsOnResponse(surveyId, data);
@@ -399,10 +397,10 @@ export const responseAPI = {
       return { response: data, error: null };
 
     } catch (error) {
-      console.error('💥 All submission methods failed:', error);
+      // All submission methods failed
       
       // Method 4: Last resort - store in localStorage as backup
-      console.log('💾 Storing response locally as backup...');
+      // Storing response locally as backup
       try {
         const backupKey = `survey_response_${surveyId}_${Date.now()}`;
         const backupData = {
@@ -412,9 +410,9 @@ export const responseAPI = {
           status: 'pending_submission'
         };
         localStorage.setItem(backupKey, JSON.stringify(backupData));
-        console.log('💾 Response backed up locally:', backupKey);
+        // Response backed up locally
       } catch (storageError) {
-        console.error('❌ Local backup also failed:', storageError);
+        // Local backup also failed
       }
       
       // Provide detailed error information
@@ -436,7 +434,7 @@ export const responseAPI = {
   // Update analytics automatically when a new response is submitted
   async updateAnalyticsOnResponse(surveyId, responseData) {
     try {
-      console.log('📊 Updating analytics for survey:', surveyId);
+      // Updating analytics for survey
       
       // Get survey owner information
       const { data: survey, error: surveyError } = await supabase
@@ -446,7 +444,7 @@ export const responseAPI = {
         .single();
 
       if (surveyError || !survey) {
-        console.warn('⚠️ Could not fetch survey info for analytics update:', surveyError);
+        // Could not fetch survey info for analytics update
         return;
       }
 
@@ -478,9 +476,9 @@ export const responseAPI = {
           .eq('survey_id', surveyId);
 
         if (updateError) {
-          console.warn('⚠️ Could not update analytics:', updateError);
+          // Could not update analytics
         } else {
-          console.log('✅ Analytics updated successfully');
+          // Analytics updated successfully
         }
       } else {
         // Create new analytics record
@@ -492,9 +490,9 @@ export const responseAPI = {
           });
 
         if (insertError) {
-          console.warn('⚠️ Could not create analytics record:', insertError);
+          // Could not create analytics record
         } else {
-          console.log('✅ Analytics record created successfully');
+          // Analytics record created successfully
         }
       }
 
@@ -502,7 +500,7 @@ export const responseAPI = {
       await this.updateUserAnalytics(survey.user_id);
 
     } catch (error) {
-      console.warn('⚠️ Analytics update failed (non-critical):', error);
+      // Analytics update failed (non-critical)
       // Don't throw error as this is not critical to response submission
     }
   },
@@ -543,7 +541,7 @@ export const responseAPI = {
           .eq('user_id', userId);
 
         if (updateError) {
-          console.warn('⚠️ Could not update user analytics:', updateError);
+          // Could not update user analytics
         }
       } else {
         // Create new record
@@ -555,23 +553,23 @@ export const responseAPI = {
           });
 
         if (insertError) {
-          console.warn('⚠️ Could not create user analytics:', insertError);
+          // Could not create user analytics
         }
       }
 
     } catch (error) {
-      console.warn('⚠️ User analytics update failed:', error);
+      // User analytics update failed
     }
   },
 
   // Helper method to ensure table exists
   async ensureTableExists() {
-    console.log('🔧 Ensuring survey_responses table exists...');
+    // Ensuring survey_responses table exists
     
     try {
       const { error } = await supabase.rpc('create_survey_responses_table_if_not_exists');
       if (error && !error.message.includes('already exists')) {
-        console.warn('⚠️ Could not create table via RPC, trying direct SQL...');
+        // Could not create table via RPC, trying direct SQL
         
         // Fallback: try direct table creation
         const createTableSQL = `
@@ -601,9 +599,9 @@ export const responseAPI = {
         await supabase.rpc('exec_sql', { sql: createTableSQL });
       }
       
-      console.log('✅ Table existence ensured');
+      // Table existence ensured
     } catch (tableError) {
-      console.warn('⚠️ Could not ensure table exists:', tableError);
+      // Could not ensure table exists
       // Continue anyway - table might already exist
     }
   },
@@ -710,7 +708,7 @@ export const analyticsAPI = {
       }
 
       // Fallback to calculating from individual tables
-      console.log('📊 User analytics not found, calculating from individual tables...');
+      // User analytics not found, calculating from individual tables
       
       // Get survey count
       const { count: surveyCount } = await supabase
@@ -2333,7 +2331,7 @@ export const handleAPIError = (error, defaultMessage = 'An error occurred') => {
 const legacyAPI = {
   // Legacy GET method
   get: async (url) => {
-    console.warn('Legacy API call detected:', url, '- Consider migrating to new API methods');
+    // Legacy API call detected - consider migrating to new API methods
     
     // Handle common legacy patterns
     if (url.includes('/api/surveys/')) {
@@ -2358,19 +2356,19 @@ const legacyAPI = {
 
   // Legacy POST method
   post: async (url, data) => {
-    console.warn('Legacy API call detected:', url, '- Consider migrating to new API methods');
+    // Legacy API call detected - consider migrating to new API methods
     throw new Error(`Legacy POST call not supported: ${url}`);
   },
 
   // Legacy PUT method
   put: async (url, data) => {
-    console.warn('Legacy API call detected:', url, '- Consider migrating to new API methods');
+    // Legacy API call detected - consider migrating to new API methods
     throw new Error(`Legacy PUT call not supported: ${url}`);
   },
 
   // Legacy DELETE method
   delete: async (url) => {
-    console.warn('Legacy API call detected:', url, '- Consider migrating to new API methods');
+    // Legacy API call detected - consider migrating to new API methods
     throw new Error(`Legacy DELETE call not supported: ${url}`);
   }
 };

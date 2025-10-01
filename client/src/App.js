@@ -262,39 +262,53 @@ function AppRoutes() {
         </AdminOnly>
       } />
       <Route path="/database-inspector" element={
-        <LazyRoute>
-          <DatabaseInspector />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <DatabaseInspector />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/database-review" element={
-        <LazyRoute>
-          <DatabaseConnectionReview />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <DatabaseConnectionReview />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/database-verify" element={
-        <LazyRoute>
-          <DatabaseTableVerification />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <DatabaseTableVerification />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/test-survey-creator" element={
-        <LazyRoute>
-          <TestSurveyCreator />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <TestSurveyCreator />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/test-survey-functionality" element={
-        <LazyRoute>
-          <SurveyFunctionalityTest />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <SurveyFunctionalityTest />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/survey-debugger" element={
-        <LazyRoute>
-          <SurveyDebugger />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <SurveyDebugger />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/submission-debugger" element={
-        <LazyRoute>
-          <SubmissionDebugger />
-        </LazyRoute>
+        <AdminOnly superAdminOnly={true}>
+          <LazyRoute>
+            <SubmissionDebugger />
+          </LazyRoute>
+        </AdminOnly>
       } />
       <Route path="/published-surveys-review" element={
         <LazyRoute>
@@ -427,9 +441,11 @@ function AppRoutes() {
           </LazyRoute>
         } />
         <Route path="billing-debug" element={
-          <LazyRoute>
-            <BillingDebug />
-          </LazyRoute>
+          <AdminOnly superAdminOnly={true}>
+            <LazyRoute>
+              <BillingDebug />
+            </LazyRoute>
+          </AdminOnly>
         } />
         <Route path="features" element={
           <LazyRoute>
@@ -596,29 +612,39 @@ function AppRoutes() {
                 </LazyRoute>
               } />
               <Route path="survey-builder-test" element={
-                <LazyRoute>
-                  <SurveyBuilderTest />
-                </LazyRoute>
+                <AdminOnly superAdminOnly={true}>
+                  <LazyRoute>
+                    <SurveyBuilderTest />
+                  </LazyRoute>
+                </AdminOnly>
               } />
               <Route path="publishing-test" element={
-                <LazyRoute>
-                  <PublishingTest />
-                </LazyRoute>
+                <AdminOnly superAdminOnly={true}>
+                  <LazyRoute>
+                    <PublishingTest />
+                  </LazyRoute>
+                </AdminOnly>
               } />
               <Route path="submission-test" element={
-                <LazyRoute>
-                  <SubmissionTest />
-                </LazyRoute>
+                <AdminOnly superAdminOnly={true}>
+                  <LazyRoute>
+                    <SubmissionTest />
+                  </LazyRoute>
+                </AdminOnly>
               } />
               <Route path="database-test" element={
-                <LazyRoute>
-                  <DatabaseTest />
-                </LazyRoute>
+                <AdminOnly superAdminOnly={true}>
+                  <LazyRoute>
+                    <DatabaseTest />
+                  </LazyRoute>
+                </AdminOnly>
               } />
-              <Route path="survey-builder-test" element={
-                <LazyRoute>
-                  <SurveyBuilderComprehensiveTest />
-                </LazyRoute>
+              <Route path="survey-builder-comprehensive-test" element={
+                <AdminOnly superAdminOnly={true}>
+                  <LazyRoute>
+                    <SurveyBuilderComprehensiveTest />
+                  </LazyRoute>
+                </AdminOnly>
               } />
               <Route path="create-surveys-events" element={
                 <LazyRoute>
