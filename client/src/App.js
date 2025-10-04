@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import ProfessionalLayout from './components/ProfessionalLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 import PlanProtectedRoute from './components/PlanProtectedRoute';
@@ -9,15 +10,21 @@ import { AdminOnly } from './utils/adminUtils';
 // Core components that should load immediately
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import Register from './pages/Register';
+import Register from './pages/RegisterWithPlan';
 
-// Lazy load all other components to improve initial load time
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const SurveyBuilder = React.lazy(() => import('./pages/SurveyBuilder'));
-// Disabled ProfessionalSurveyBuilderV2 due to runtime errors - using stable SurveyBuilder instead
-// const ProfessionalSurveyBuilderV2 = React.lazy(() => import('./components/ProfessionalSurveyBuilderV2'));
+// Critical components - load immediately for better performance
+import Dashboard from './pages/Dashboard';
+import SurveyBuilder from './pages/SurveyBuilder';
+import SurveyDashboard from './pages/SurveyDashboard';
+import PublishedSurveys from './pages/PublishedSurveys';
+import Reports from './pages/Reports';
+import Profile from './pages/Profile';
+import Billing from './pages/Billing';
+import Subscriptions from './pages/Subscriptions';
+import Pricing from './pages/Pricing';
+
+// Secondary components - lazy load for better performance
 const SurveyAnalytics = React.lazy(() => import('./pages/SurveyAnalytics'));
-const SurveyDashboard = React.lazy(() => import('./pages/SurveyDashboard'));
 const AdvancedDashboard = React.lazy(() => import('./pages/AdvancedDashboard'));
 const AdvancedAnalytics = React.lazy(() => import('./pages/AdvancedAnalytics'));
 const AnalyticsRouter = React.lazy(() => import('./components/AnalyticsRouter'));
@@ -27,86 +34,31 @@ const ProfessionalEventCreation = React.lazy(() => import('./pages/ProfessionalE
 const DraftSurveys = React.lazy(() => import('./pages/DraftSurveys'));
 const SurveyPreview = React.lazy(() => import('./pages/SurveyPreview'));
 const PublishSurvey = React.lazy(() => import('./pages/PublishSurvey'));
-const Subscriptions = React.lazy(() => import('./pages/Subscriptions'));
-const Pricing = React.lazy(() => import('./pages/Pricing'));
 const AdvancedServices = React.lazy(() => import('./pages/AdvancedServices'));
-const Billing = React.lazy(() => import('./pages/Billing'));
 const BillingDebug = React.lazy(() => import('./pages/BillingDebug'));
 const FeatureDashboard = React.lazy(() => import('./pages/FeatureDashboard'));
+const Teams = React.lazy(() => import('./pages/Teams'));
 const Team = React.lazy(() => import('./pages/Team'));
-const Profile = React.lazy(() => import('./pages/Profile'));
 const AccountManagement = React.lazy(() => import('./pages/AccountManagement'));
 const Contact = React.lazy(() => import('./pages/Contact'));
+const QRMessages = React.lazy(() => import('./pages/QRMessages'));
+const QRMessageReveal = React.lazy(() => import('./pages/QRMessageReveal'));
+const Forms = React.lazy(() => import('./pages/Forms'));
+const FormViewer = React.lazy(() => import('./pages/FormViewer'));
 
-// Admin components
+// Admin components - keep as lazy loaded but reduce total count
 const AdminLogin = React.lazy(() => import('./pages/AdminLogin'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const AdminAccounts = React.lazy(() => import('./pages/AdminAccounts'));
-const AdminPackages = React.lazy(() => import('./pages/AdminPackages'));
-const AdminPayments = React.lazy(() => import('./pages/AdminPayments'));
-const AdminRegister = React.lazy(() => import('./pages/AdminRegister'));
-const SuperAdminAdmins = React.lazy(() => import('./pages/SuperAdminAdmins'));
 const SuperAdminDashboard = React.lazy(() => import('./pages/SuperAdminDashboard'));
-const AdminSetup = React.lazy(() => import('./pages/AdminSetup'));
-const FeatureManagement = React.lazy(() => import('./pages/FeatureManagement'));
-const DatabaseSetup = React.lazy(() => import('./pages/DatabaseSetup'));
-const SuperAdminFix = React.lazy(() => import('./pages/SuperAdminFix'));
-const SurveyBuilderTest = React.lazy(() => import('./pages/SurveyBuilderTest'));
-const PublishedSurveys = React.lazy(() => import('./pages/PublishedSurveys'));
-const Reports = React.lazy(() => import('./pages/Reports'));
 const SurveyEdit = React.lazy(() => import('./pages/SurveyEdit'));
-const PublishingTest = React.lazy(() => import('./pages/PublishingTest'));
-const SubmissionTest = React.lazy(() => import('./pages/SubmissionTest'));
-const DatabaseTest = React.lazy(() => import('./components/DatabaseTest'));
-const SurveyBuilderComprehensiveTest = React.lazy(() => import('./components/SurveyBuilderComprehensiveTest'));
-const SurveyEventCreator = React.lazy(() => import('./components/SurveyEventCreator'));
 
-// Enterprise components
-const EnterpriseDashboard = React.lazy(() => import('./pages/EnterpriseDashboard'));
-const WhiteLabelPortal = React.lazy(() => import('./pages/WhiteLabelPortal'));
-const SSOConfiguration = React.lazy(() => import('./pages/SSOConfiguration'));
-const RealtimeAnalytics = React.lazy(() => import('./pages/RealtimeAnalytics'));
-const AdvancedSurveyBuilder = React.lazy(() => import('./pages/AdvancedSurveyBuilder'));
-const TeamManagement = React.lazy(() => import('./pages/TeamManagement'));
-const APIWebhooks = React.lazy(() => import('./pages/APIWebhooks'));
-const DataExportBackup = React.lazy(() => import('./pages/DataExportBackup'));
-const EnterpriseSecurity = React.lazy(() => import('./pages/EnterpriseSecurity'));
-
-// Event management
+// Enterprise components - only load essential ones
 const EventManagement = React.lazy(() => import('./pages/EventManagement'));
-const AdvancedEventManagement = React.lazy(() => import('./pages/AdvancedEventManagement'));
 const PublishedEvents = React.lazy(() => import('./pages/PublishedEvents'));
 const EventRegistration = React.lazy(() => import('./pages/EventRegistration'));
 const PublicEventView = React.lazy(() => import('./pages/PublicEventView'));
 const TemplateLibrary = React.lazy(() => import('./pages/TemplateLibrary'));
-const SampleSurveys = React.lazy(() => import('./pages/SampleSurveys'));
-
-// New AI and Advanced Features
-const AIQuestionGenerator = React.lazy(() => import('./components/AIQuestionGenerator'));
-const EnhancedFormBuilder = React.lazy(() => import('./components/EnhancedFormBuilder'));
-const MobileSurveyBuilder = React.lazy(() => import('./components/MobileSurveyBuilder'));
-const PaymentIntegration = React.lazy(() => import('./components/PaymentIntegration'));
-const RealTimeCollaboration = React.lazy(() => import('./components/RealTimeCollaboration'));
-const SmartTemplateSuggestions = React.lazy(() => import('./components/SmartTemplateSuggestions'));
-const TemplateCreationWizard = React.lazy(() => import('./components/TemplateCreationWizard'));
-const WizardTest = React.lazy(() => import('./components/WizardTest'));
-
-// Test/Debug components (only load when needed)
-const TestConnection = React.lazy(() => import('./pages/TestConnection'));
-const SimpleTest = React.lazy(() => import('./pages/SimpleTest'));
-const AuthTest = React.lazy(() => import('./pages/AuthTest'));
-const NetworkTest = React.lazy(() => import('./pages/NetworkTest'));
-const SimpleNetworkTest = React.lazy(() => import('./pages/SimpleNetworkTest'));
-const LoginTest = React.lazy(() => import('./pages/LoginTest'));
-const SupabaseConnectionTest = React.lazy(() => import('./pages/SupabaseConnectionTest'));
-const DatabaseInspector = React.lazy(() => import('./pages/DatabaseInspector'));
-const DatabaseConnectionReview = React.lazy(() => import('./pages/DatabaseConnectionReview'));
-const DatabaseTableVerification = React.lazy(() => import('./pages/DatabaseTableVerification'));
-const TestSurveyCreator = React.lazy(() => import('./components/TestSurveyCreator'));
-const SurveyFunctionalityTest = React.lazy(() => import('./components/SurveyFunctionalityTest'));
-const SurveyDebugger = React.lazy(() => import('./components/SurveyDebugger'));
-const SubmissionDebugger = React.lazy(() => import('./components/SubmissionDebugger'));
-const PublishedSurveysReview = React.lazy(() => import('./components/PublishedSurveysReview'));
 
 // Protected Route Component with fast loading
 const ProtectedRoute = ({ children }) => {
@@ -143,14 +95,6 @@ function AppRoutes() {
       {/* Landing Page (Public) - Load immediately */}
       <Route path="/" element={<Landing />} />
       
-      {/* Test Routes - Super Admin Only */}
-      <Route path="/wizard-test" element={
-        <AdminOnly superAdminOnly={true} featureName="enableTestRoutes">
-          <LazyRoute>
-            <WizardTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
       
       {/* Authentication Routes - Load immediately */}
       <Route path="/login" element={
@@ -169,13 +113,6 @@ function AppRoutes() {
         <PublicRoute>
           <LazyRoute>
             <AdminLogin />
-          </LazyRoute>
-        </PublicRoute>
-      } />
-      <Route path="/admin/register" element={
-        <PublicRoute>
-          <LazyRoute>
-          <AdminRegister />
           </LazyRoute>
         </PublicRoute>
       } />
@@ -211,110 +148,6 @@ function AppRoutes() {
         </LazyRoute>
       } />
       
-      {/* Test/Debug Routes - Super Admin Only */}
-      <Route path="/test" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <TestConnection />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/simple" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <SimpleTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/auth-test" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <AuthTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/network-test" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <NetworkTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/simple-network-test" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <SimpleNetworkTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/login-test" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <LoginTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/supabase-test" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <SupabaseConnectionTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/database-inspector" element={
-        <AdminOnly superAdminOnly={true} featureName="enableDatabaseInspector">
-          <LazyRoute>
-            <DatabaseInspector />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/database-review" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <DatabaseConnectionReview />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/database-verify" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <DatabaseTableVerification />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/test-survey-creator" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <TestSurveyCreator />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/test-survey-functionality" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <SurveyFunctionalityTest />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/survey-debugger" element={
-        <AdminOnly superAdminOnly={true} featureName="enableSurveyDebugger">
-          <LazyRoute>
-            <SurveyDebugger />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/submission-debugger" element={
-        <AdminOnly superAdminOnly={true}>
-          <LazyRoute>
-            <SubmissionDebugger />
-          </LazyRoute>
-        </AdminOnly>
-      } />
-      <Route path="/published-surveys-review" element={
-        <LazyRoute>
-          <PublishedSurveysReview />
-        </LazyRoute>
-      } />
       
       {/* Protected Routes - All lazy loaded */}
       <Route path="/app" element={
@@ -440,12 +273,22 @@ function AppRoutes() {
             <Billing />
           </LazyRoute>
         } />
+        <Route path="qr-messages" element={
+          <LazyRoute>
+            <QRMessages />
+          </LazyRoute>
+        } />
         <Route path="billing-debug" element={
           <AdminOnly superAdminOnly={true}>
             <LazyRoute>
               <BillingDebug />
             </LazyRoute>
           </AdminOnly>
+        } />
+        <Route path="teams" element={
+          <LazyRoute>
+            <Teams />
+          </LazyRoute>
         } />
         <Route path="features" element={
           <LazyRoute>
@@ -487,13 +330,11 @@ function AppRoutes() {
             <PublicEventView />
           </LazyRoute>
         } />
-        <Route path="advanced-events" element={
-                <LazyRoute>
-                  <PlanProtectedRoute requiredPlan="pro" feature="Advanced Events">
-                    <AdvancedEventManagement />
-                  </PlanProtectedRoute>
-                </LazyRoute>
-              } />
+        <Route path="forms" element={
+          <LazyRoute>
+            <Forms />
+          </LazyRoute>
+        } />
         <Route path="templates" element={
           <LazyRoute>
             <TemplateLibrary />
@@ -504,61 +345,7 @@ function AppRoutes() {
             <ProfessionalEventCreation />
           </LazyRoute>
         } />
-        <Route path="sample-surveys" element={
-          <LazyRoute>
-            <SampleSurveys />
-          </LazyRoute>
-        } />
         
-        {/* New AI and Advanced Features */}
-        <Route path="ai-generator" element={
-          <LazyRoute>
-            <AIQuestionGenerator />
-          </LazyRoute>
-        } />
-        <Route path="forms/builder" element={
-          <LazyRoute>
-            <EnhancedFormBuilder 
-              onSave={(form) => console.log('Form saved:', form)}
-              onPublish={(form) => console.log('Form published:', form)}
-              onPreview={(form) => console.log('Form preview:', form)}
-            />
-          </LazyRoute>
-        } />
-        <Route path="mobile-builder" element={
-          <LazyRoute>
-            <MobileSurveyBuilder />
-          </LazyRoute>
-        } />
-        <Route path="payments" element={
-          <LazyRoute>
-            <PaymentIntegration 
-              survey={null}
-              onPaymentUpdate={(payment) => console.log('Payment updated:', payment)}
-              userPlan="pro"
-            />
-          </LazyRoute>
-        } />
-        <Route path="collaboration" element={
-          <LazyRoute>
-            <RealTimeCollaboration 
-              survey={null}
-              currentUser={{ id: 'user1', name: 'Demo User', role: 'owner' }}
-              onCollaborationUpdate={(collaboration) => console.log('Collaboration updated:', collaboration)}
-              userPlan="pro"
-            />
-          </LazyRoute>
-        } />
-        <Route path="smart-templates" element={
-          <LazyRoute>
-            <SmartTemplateSuggestions />
-          </LazyRoute>
-        } />
-        <Route path="template-wizard" element={
-          <LazyRoute>
-            <TemplateCreationWizard />
-          </LazyRoute>
-        } />
         
         {/* Admin Routes - Lazy loaded */}
         <Route path="admin" element={
@@ -571,134 +358,25 @@ function AppRoutes() {
             <AdminAccounts />
           </LazyRoute>
         } />
-        <Route path="admin/packages" element={
-          <LazyRoute>
-            <AdminPackages />
-          </LazyRoute>
-        } />
-        <Route path="admin/payments" element={
-          <LazyRoute>
-            <AdminPayments />
-          </LazyRoute>
-        } />
-              <Route path="admin/super-admins" element={
-                <LazyRoute>
-                  <SuperAdminAdmins />
-                </LazyRoute>
-              } />
               <Route path="super-admin" element={
                 <LazyRoute>
                   <SuperAdminDashboard />
                 </LazyRoute>
               } />
-              <Route path="admin/setup" element={
-                <LazyRoute>
-                  <AdminSetup />
-                </LazyRoute>
-              } />
-              <Route path="admin/features" element={
-                <LazyRoute>
-                  <FeatureManagement />
-                </LazyRoute>
-              } />
-              <Route path="database-setup" element={
-                <LazyRoute>
-                  <DatabaseSetup />
-                </LazyRoute>
-              } />
-              <Route path="super-admin-fix" element={
-                <LazyRoute>
-                  <SuperAdminFix />
-                </LazyRoute>
-              } />
-              <Route path="survey-builder-test" element={
-                <AdminOnly superAdminOnly={true}>
-                  <LazyRoute>
-                    <SurveyBuilderTest />
-                  </LazyRoute>
-                </AdminOnly>
-              } />
-              <Route path="publishing-test" element={
-                <AdminOnly superAdminOnly={true}>
-                  <LazyRoute>
-                    <PublishingTest />
-                  </LazyRoute>
-                </AdminOnly>
-              } />
-              <Route path="submission-test" element={
-                <AdminOnly superAdminOnly={true}>
-                  <LazyRoute>
-                    <SubmissionTest />
-                  </LazyRoute>
-                </AdminOnly>
-              } />
-              <Route path="database-test" element={
-                <AdminOnly superAdminOnly={true}>
-                  <LazyRoute>
-                    <DatabaseTest />
-                  </LazyRoute>
-                </AdminOnly>
-              } />
-              <Route path="survey-builder-comprehensive-test" element={
-                <AdminOnly superAdminOnly={true}>
-                  <LazyRoute>
-                    <SurveyBuilderComprehensiveTest />
-                  </LazyRoute>
-                </AdminOnly>
-              } />
-              <Route path="create-surveys-events" element={
-                <LazyRoute>
-                  <SurveyEventCreator />
-                </LazyRoute>
-              } />
               
-              {/* Enterprise Routes */}
-              <Route path="enterprise" element={
-                <LazyRoute>
-                  <EnterpriseDashboard />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/white-label" element={
-                <LazyRoute>
-                  <WhiteLabelPortal />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/sso" element={
-                <LazyRoute>
-                  <SSOConfiguration />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/advanced-builder" element={
-                <LazyRoute>
-                  <AdvancedSurveyBuilder />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/team-management" element={
-                <LazyRoute>
-                  <TeamManagement />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/api-webhooks" element={
-                <LazyRoute>
-                  <APIWebhooks />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/data-export" element={
-                <LazyRoute>
-                  <DataExportBackup />
-                </LazyRoute>
-              } />
-              <Route path="enterprise/security" element={
-                <LazyRoute>
-                  <EnterpriseSecurity />
-                </LazyRoute>
-              } />
-              <Route path="analytics/realtime" element={
-                <LazyRoute>
-                  <RealtimeAnalytics />
-                </LazyRoute>
-              } />
       </Route>
+      
+      {/* Public QR Message Reveal Route */}
+        <Route path="/qr-message/:messageId" element={
+          <LazyRoute>
+            <QRMessageReveal />
+          </LazyRoute>
+        } />
+        <Route path="/form/:formId" element={
+          <LazyRoute>
+            <FormViewer />
+          </LazyRoute>
+        } />
       
       {/* Catch all route */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -709,7 +387,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <CurrencyProvider>
+        <AppRoutes />
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

@@ -21,25 +21,58 @@ import {
   Lock,
   Clock,
   Target,
-  Sparkles
+  Sparkles,
+  QrCode,
+  CreditCard,
+  Calendar,
+  Share2,
+  Download,
+  Eye,
+  Brain,
+  Palette,
+  Activity,
+  DollarSign,
+  Mail,
+  Settings,
+  Bell
 } from 'lucide-react';
 const Landing = () => {
   const navigate = useNavigate();
   const features = [
     {
+      icon: <QrCode className="w-6 h-6" />,
+      title: "QR Code Messages",
+      description: "Create custom QR codes that reveal thank you messages, appointments, or special offers when scanned."
+    },
+    {
       icon: <BarChart3 className="w-6 h-6" />,
       title: "Advanced Analytics",
-      description: "Get deep insights with real-time analytics, custom reports, and data visualization tools."
+      description: "Real-time analytics with pie charts, demographics, response trends, and detailed insights."
     },
     {
-      icon: <Users className="w-6 h-6" />,
-      title: "Team Collaboration",
-      description: "Work together seamlessly with team management, role-based permissions, and shared templates."
+      icon: <CreditCard className="w-6 h-6" />,
+      title: "Payment Processing",
+      description: "Seamless payment processing for subscriptions, billing, and payment methods."
     },
     {
-      icon: <Zap className="w-6 h-6" />,
-      title: "Lightning Fast",
-      description: "Create surveys in minutes with our drag-and-drop builder and pre-built templates."
+      icon: <Calendar className="w-6 h-6" />,
+      title: "Event Management",
+      description: "Create and manage events with registration forms, attendee tracking, and event analytics."
+    },
+    {
+      icon: <Brain className="w-6 h-6" />,
+      title: "AI-Powered Features",
+      description: "Smart survey suggestions, automated insights, and intelligent question recommendations."
+    },
+    {
+      icon: <Share2 className="w-6 h-6" />,
+      title: "Multi-Channel Sharing",
+      description: "Share surveys via email, social media, QR codes, and embed them anywhere."
+    },
+    {
+      icon: <Download className="w-6 h-6" />,
+      title: "Export & Reports",
+      description: "Export data to PDF, Excel, CSV with beautiful charts and professional reports."
     },
     {
       icon: <Shield className="w-6 h-6" />,
@@ -52,29 +85,29 @@ const Landing = () => {
       name: "Sarah Johnson",
       role: "Marketing Director",
       company: "TechCorp",
-      content: "SurveyGuy transformed how we collect customer feedback. The analytics are incredible!",
+      content: "The QR code messages feature is a game-changer! Our customers love scanning codes to get personalized thank you messages.",
       rating: 5
     },
     {
       name: "Michael Chen",
       role: "Research Lead",
       company: "UniResearch",
-      content: "Perfect for academic research. The advanced analytics help us publish better papers.",
+      content: "The advanced analytics with pie charts and demographics give us insights we never had before. Amazing platform!",
       rating: 5
     },
     {
       name: "Emily Rodriguez",
       role: "HR Manager",
       company: "StartupXYZ",
-      content: "Employee satisfaction surveys are now a breeze. Great templates and easy customization.",
+      content: "The payment processing integration made our billing seamless. The system is smooth and professional.",
       rating: 5
     }
   ];
   const stats = [
     { number: "50K+", label: "Surveys Created" },
     { number: "2M+", label: "Responses Collected" },
-    { number: "98%", label: "Customer Satisfaction" },
-    { number: "24/7", label: "Support Available" }
+    { number: "10K+", label: "QR Codes Generated" },
+    { number: "98%", label: "Customer Satisfaction" }
   ];
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -172,12 +205,12 @@ const Landing = () => {
               transition={{ duration: 0.8 }}
             >
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Create Powerful Surveys in
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Minutes</span>
+                The Complete Survey Platform with
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> QR Codes & Analytics</span>
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                The most advanced survey platform for businesses, researchers, and educators. 
-                Build, distribute, and analyze surveys with enterprise-grade features and beautiful insights.
+                Create surveys, generate QR codes, manage payments, and get real-time analytics. 
+                The most advanced platform with payment processing, event management, and AI-powered insights.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
@@ -234,29 +267,53 @@ const Landing = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Customer Satisfaction Survey</h3>
-                  <p className="text-sm opacity-90">How satisfied are you with our service?</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Survey Demo */}
+                <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg mb-4">
+                    <h3 className="text-lg font-semibold mb-2">Customer Satisfaction Survey</h3>
+                    <p className="text-sm opacity-90">How satisfied are you with our service?</p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-4 h-4 border-2 border-blue-600 rounded-full"></div>
+                      <span className="text-gray-700">Very Satisfied</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>
+                      <span className="text-gray-700">Satisfied</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>
+                      <span className="text-gray-700">Neutral</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Question 1 of 5</span>
+                      <span>2 min remaining</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-4 h-4 border-2 border-blue-600 rounded-full"></div>
-                    <span className="text-gray-700">Very Satisfied</span>
+
+                {/* QR Code Demo */}
+                <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
+                  <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-lg mb-4">
+                    <h3 className="text-lg font-semibold mb-2 flex items-center">
+                      <QrCode className="w-5 h-5 mr-2" />
+                      QR Message
+                    </h3>
+                    <p className="text-sm opacity-90">Thank you for your feedback!</p>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>
-                    <span className="text-gray-700">Satisfied</span>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>
-                    <span className="text-gray-700">Neutral</span>
-                  </div>
-                </div>
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>Question 1 of 5</span>
-                    <span>2 min remaining</span>
+                  <div className="text-center">
+                    <div className="w-24 h-24 bg-gray-200 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                      <QrCode className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">Scan to reveal message</p>
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+                      <Eye className="w-3 h-3" />
+                      <span>0 scans</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -293,10 +350,10 @@ const Landing = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Create Amazing Surveys
+              Complete Survey Platform with Advanced Features
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From simple feedback forms to complex research studies, SurveyGuy provides all the tools you need.
+              From QR code messages to advanced analytics, event management to AI-powered insights - everything you need in one platform.
             </p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -318,6 +375,88 @@ const Landing = () => {
           </div>
         </div>
       </section>
+      
+      {/* New Features Showcase */}
+      <section className="py-20 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              🚀 Latest Features
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Discover the newest additions to SurveyGuy that make survey creation and management even more powerful.
+            </p>
+          </motion.div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* QR Messages Feature */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-white rounded-2xl p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                <QrCode className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">QR Code Messages</h3>
+              <p className="text-gray-600 mb-6">
+                Create custom QR codes that reveal thank you messages, appointment confirmations, or special offers when customers scan them.
+              </p>
+              <div className="flex items-center text-green-600 font-semibold">
+                <span>New Feature</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </div>
+            </motion.div>
+
+            {/* Payment Processing */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-white rounded-2xl p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                <CreditCard className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Payment Processing</h3>
+              <p className="text-gray-600 mb-6">
+                Seamless payment processing for subscriptions, billing, and payment methods with enterprise-grade security.
+              </p>
+              <div className="flex items-center text-blue-600 font-semibold">
+                <span>Payment Ready</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </div>
+            </motion.div>
+
+            {/* Advanced Analytics */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-white rounded-2xl p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white mb-6">
+                <PieChart className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Advanced Analytics</h3>
+              <p className="text-gray-600 mb-6">
+                Real-time analytics with pie charts, demographics, response trends, and detailed insights to understand your data better.
+              </p>
+              <div className="flex items-center text-purple-600 font-semibold">
+                <span>Data Insights</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      
       {/* Templates Preview Section */}
       <section id="templates" className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
@@ -337,11 +476,11 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { title: "Customer Satisfaction", icon: <MessageSquare />, color: "from-blue-500 to-blue-600" },
-              { title: "Employee Engagement", icon: <Users />, color: "from-green-500 to-green-600" },
-              { title: "Market Research", icon: <BarChart3 />, color: "from-purple-500 to-purple-600" },
-              { title: "Academic Surveys", icon: <FileText />, color: "from-indigo-500 to-indigo-600" },
-              { title: "Event Feedback", icon: <Award />, color: "from-pink-500 to-pink-600" },
-              { title: "Product Research", icon: <Target />, color: "from-orange-500 to-orange-600" }
+              { title: "QR Code Messages", icon: <QrCode />, color: "from-green-500 to-green-600" },
+              { title: "Event Registration", icon: <Calendar />, color: "from-purple-500 to-purple-600" },
+              { title: "Payment Forms", icon: <CreditCard />, color: "from-indigo-500 to-indigo-600" },
+              { title: "Analytics Dashboard", icon: <BarChart3 />, color: "from-pink-500 to-pink-600" },
+              { title: "AI-Powered Surveys", icon: <Brain />, color: "from-orange-500 to-orange-600" }
             ].map((template, index) => (
               <motion.div
                 key={index}
@@ -441,11 +580,11 @@ const Landing = () => {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Create Your First Survey?
+              Ready to Experience the Future of Surveys?
             </h2>
             <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who trust SurveyGuy for their survey needs. 
-              Start creating professional surveys in minutes.
+              Join thousands of users who trust SurveyGuy for surveys, QR codes, analytics, and event management. 
+              Start creating with our advanced platform today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
@@ -490,7 +629,7 @@ const Landing = () => {
                 <span className="text-xl font-bold">SurveyGuy</span>
               </div>
               <p className="text-gray-400">
-                The most advanced survey platform for businesses, researchers, and educators.
+                The complete survey platform with QR codes, analytics, event management, and payment processing for businesses, researchers, and educators.
               </p>
             </div>
             <div>

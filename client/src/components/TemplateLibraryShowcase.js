@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { sampleSurveys } from '../data/sampleSurveys';
-import { sampleEvents } from '../data/sampleEvents';
+import { supabase } from '../lib/supabase';
 import {
   Search,
   Filter,
@@ -29,8 +28,31 @@ const TemplateLibraryShowcase = ({ onSelectTemplate, type = 'survey' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedIndustry, setSelectedIndustry] = useState('all');
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const templates = type === 'survey' ? sampleSurveys : sampleEvents;
+  useEffect(() => {
+    loadTemplates();
+  }, [type]);
+
+  const loadTemplates = async () => {
+    try {
+      setLoading(true);
+      const tableName = type === 'survey' ? 'survey_templates' : 'event_templates';
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('is_public', true);
+
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      setTemplates([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const categories = [
     { id: 'all', name: 'All Categories', icon: <Star className="w-4 h-4" /> },

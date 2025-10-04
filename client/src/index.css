@@ -21,7 +21,7 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+    @apply inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 border border-transparent text-sm sm:text-base font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 min-h-[44px] sm:min-h-[40px];
   }
   
   .btn-primary {
@@ -45,7 +45,7 @@
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-soft border border-gray-200;
+    @apply bg-white rounded-lg shadow-soft border border-gray-200 p-4 sm:p-6 lg:p-8;
   }
   
   .card-header {
@@ -61,7 +61,7 @@
   }
   
   .emoji-option {
-    @apply flex flex-col items-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all duration-200;
+    @apply flex flex-col items-center p-4 sm:p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all duration-200 min-h-[60px] sm:min-h-[50px];
   }
   
   .emoji-option.selected {

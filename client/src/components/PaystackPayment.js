@@ -17,15 +17,15 @@ const PaystackPayment = ({
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  // Plan pricing in GHS
+  // Plan pricing in GHS (matching paystackService.js)
   const planPrices = {
     pro: {
-      monthly: 600,
-      yearly: 6000
+      monthly: 20.00,
+      yearly: 200.00
     },
     enterprise: {
-      monthly: 1800,
-      yearly: 18000
+      monthly: 99.99,
+      yearly: 999.99
     }
   };
 

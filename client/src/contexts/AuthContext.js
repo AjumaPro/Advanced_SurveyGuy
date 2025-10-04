@@ -248,14 +248,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password, name) => {
+  const register = async (email, password, name, plan = 'free') => {
     try {
       console.log('🔐 AuthContext: Attempting registration with Supabase...');
       const { data, error } = await supabase.auth.signUp({
         email, 
         password, 
         options: {
-          data: { full_name: name }
+          data: { 
+            full_name: name,
+            plan: plan
+          }
         }
       });
       
@@ -266,7 +269,34 @@ export const AuthProvider = ({ children }) => {
       }
       
       console.log('✅ AuthContext: Registration successful:', data);
-      toast.success('Registration successful! Please check your email to confirm your account.');
+      
+      // Create profile with selected plan
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            full_name: name,
+            plan: plan,
+            role: 'user',
+            is_active: true,
+            is_verified: false
+          });
+
+        if (profileError) {
+          console.error('❌ Profile creation error:', profileError);
+          // Don't fail registration if profile creation fails
+        } else {
+          console.log('✅ Profile created with plan:', plan);
+        }
+      }
+      
+      const successMessage = (plan === 'pro' || plan === 'enterprise')
+        ? 'Registration successful! Redirecting to payment...'
+        : 'Registration successful! You can now start creating surveys.';
+      
+      toast.success(successMessage);
       return { success: true, user: data.user };
     } catch (error) {
       console.error('❌ AuthContext: Registration exception:', error);

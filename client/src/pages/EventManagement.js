@@ -8,45 +8,8 @@ const EventManagement = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // Sample event data for demonstration
-  const sampleEvents = [
-    {
-      id: 1,
-      title: 'Tech Conference 2024',
-      description: 'Join us for the biggest tech conference of the year featuring industry leaders and cutting-edge innovations.',
-      date: '2024-12-15',
-      time: '09:00',
-      location: 'Convention Center, Downtown',
-      capacity: 500,
-      registrations: 342,
-      price: 299.99,
-      template: 'conference'
-    },
-    {
-      id: 2,
-      title: 'Web Development Workshop',
-      description: 'Hands-on workshop covering modern web development techniques and best practices.',
-      date: '2024-11-20',
-      time: '14:00',
-      location: 'Tech Hub, Innovation District',
-      capacity: 50,
-      registrations: 47,
-      price: 99.99,
-      template: 'workshop'
-    },
-    {
-      id: 3,
-      title: 'Virtual Marketing Summit',
-      description: 'Learn from marketing experts in this comprehensive online summit.',
-      date: '2024-12-01',
-      time: '10:00',
-      location: 'Online (Zoom)',
-      capacity: 200,
-      registrations: 156,
-      price: 149.99,
-      template: 'webinar'
-    }
-  ];
+  // Events will be loaded from the database
+  const [events, setEvents] = useState([]);
 
   const handleRegistrationSubmit = async (formData) => {
     // Simulate API call

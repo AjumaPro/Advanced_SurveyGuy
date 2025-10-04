@@ -14,6 +14,7 @@ import {
 import EmojiScale from '../components/EmojiScale';
 import SubscriptionForm from '../components/SubscriptionForm';
 import MatrixQuestion from '../components/MatrixQuestion';
+import { testDatabaseConnection, testSurveyAccess } from '../utils/testDatabase';
 
 const SurveyResponse = () => {
   const { id } = useParams();
@@ -31,15 +32,42 @@ const SurveyResponse = () => {
     try {
       setLoading(true);
       
+      console.log('🔍 Fetching survey with ID:', id);
+      console.log('🌐 Current URL:', window.location.href);
+      console.log('🏠 Base URL:', window.location.origin);
+      
+      // Test database connection first
+      console.log('📡 Testing database connection...');
+      const dbTest = await testDatabaseConnection();
+      console.log('📊 Database test result:', dbTest);
+      
+      // Test specific survey access
+      console.log('🎯 Testing specific survey access...');
+      const surveyTest = await testSurveyAccess(id);
+      console.log('📋 Survey test result:', surveyTest);
+      
       // Fetch published survey using new API
+      console.log('📡 Fetching survey via API...');
       const response = await api.responses.getPublicSurvey(id);
+      console.log('📨 API response:', response);
       
       if (response.error) {
-        console.error('Error fetching survey:', response.error);
-        toast.error('Survey not found or not available');
+        console.error('❌ Error fetching survey:', response.error);
+        console.log('🔍 Survey ID:', id);
+        console.log('🔍 API response:', response);
+        
+        // Show more detailed error information
+        toast.error(`Survey not found: ${response.error}`);
         return;
       }
 
+      if (!response.survey) {
+        console.error('❌ No survey data returned');
+        toast.error('Survey data not available');
+        return;
+      }
+
+      console.log('✅ Survey fetched successfully:', response.survey);
       setSurvey(response.survey);
       
       // Initialize responses object
@@ -51,8 +79,10 @@ const SurveyResponse = () => {
       }
       setResponses(initialResponses);
     } catch (error) {
-      console.error('Error fetching survey:', error);
-      toast.error('Survey not found or not available');
+      console.error('💥 Error fetching survey:', error);
+      console.log('🔍 Survey ID:', id);
+      console.log('🔍 Error details:', error);
+      toast.error(`Survey access failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -229,9 +259,9 @@ const SurveyResponse = () => {
         </div>
 
         {/* Question */}
-        <div className="card p-8">
+        <div className="card">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               {question.title}
             </h2>
             {question.description && (
@@ -250,36 +280,38 @@ const SurveyResponse = () => {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <button
               onClick={previousQuestion}
               disabled={currentQuestionIndex === 0}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Previous
+              <span className="hidden sm:inline">Previous</span>
             </button>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-1 sm:flex-none">
               {currentQuestionIndex === survey.questions.length - 1 ? (
                 <button
                   onClick={submitSurvey}
                   disabled={submitting}
-                  className="btn-primary"
+                  className="btn-primary flex-1 sm:flex-none"
                 >
                   {submitting ? (
                     <div className="spinner w-4 h-4 mr-2"></div>
                   ) : (
                     <Send className="h-4 w-4 mr-2" />
                   )}
-                  Submit Survey
+                  <span className="hidden sm:inline">Submit Survey</span>
+                  <span className="sm:hidden">Submit</span>
                 </button>
               ) : (
                 <button
                   onClick={nextQuestion}
-                  className="btn-primary"
+                  className="btn-primary flex-1 sm:flex-none"
                 >
-                  Next
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </button>
               )}
@@ -304,7 +336,7 @@ const SurveyResponse = () => {
               type="text"
               value={currentResponse || ''}
               onChange={(e) => handleResponse(question.id, e.target.value)}
-              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+              className={`w-full p-4 sm:p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-base sm:text-sm ${
                 currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
               }`}
               placeholder="Your answer"
@@ -328,7 +360,7 @@ const SurveyResponse = () => {
             <textarea
               value={currentResponse || ''}
               onChange={(e) => handleResponse(question.id, e.target.value)}
-              className={`w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+              className={`w-full p-4 sm:p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-base sm:text-sm ${
                 currentResponse ? 'border-green-500 bg-green-50' : 'border-gray-300'
               }`}
               rows="4"
@@ -354,7 +386,7 @@ const SurveyResponse = () => {
               const isSelected = currentResponse === optionValue;
               
               return (
-                <label key={index} className={`flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg border-2 transition-all duration-200 ${
+                <label key={index} className={`flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-4 sm:p-3 rounded-lg border-2 transition-all duration-200 min-h-[56px] sm:min-h-[48px] ${
                   isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <div className="relative">
@@ -364,7 +396,7 @@ const SurveyResponse = () => {
                       value={optionValue}
                       checked={isSelected}
                       onChange={(e) => handleResponse(question.id, e.target.value)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className="h-5 w-5 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
                     {isSelected && (
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
@@ -372,7 +404,7 @@ const SurveyResponse = () => {
                       </div>
                     )}
                   </div>
-                  <span className={`flex-1 text-gray-700 font-medium ${isSelected ? 'text-blue-700' : ''}`}>
+                  <span className={`flex-1 text-base sm:text-sm text-gray-700 font-medium ${isSelected ? 'text-blue-700' : ''}`}>
                     {optionLabel}
                   </span>
                 </label>
@@ -485,7 +517,7 @@ const SurveyResponse = () => {
                       className="sr-only"
                     />
                     <div className="relative">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                      <div className={`w-12 h-12 sm:w-10 sm:h-10 md:w-8 md:h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
                         isSelected 
                           ? 'border-blue-600 bg-blue-600 text-white scale-110' 
                           : 'border-gray-300 hover:border-gray-400 hover:scale-105'
@@ -502,7 +534,7 @@ const SurveyResponse = () => {
                         </div>
                       )}
                     </div>
-                    <span className={`text-xs font-medium ${isSelected ? 'text-blue-600' : 'text-gray-600'}`}>
+                    <span className={`text-sm sm:text-xs font-medium ${isSelected ? 'text-blue-600' : 'text-gray-600'}`}>
                       {option}
                     </span>
                   </label>
@@ -541,19 +573,19 @@ const SurveyResponse = () => {
         const maxStars = question.settings?.max || 5;
         return (
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center space-x-2 sm:space-x-1">
               {Array.from({ length: maxStars }, (_, i) => i + 1).map((star) => (
                 <button
                   key={star}
                   type="button"
                   onClick={() => handleResponse(question.id, star)}
-                  className={`p-1 rounded transition-all duration-200 ${
+                  className={`p-2 sm:p-1 rounded transition-all duration-200 min-h-[48px] sm:min-h-[40px] min-w-[48px] sm:min-w-[40px] flex items-center justify-center ${
                     currentResponse >= star 
                       ? 'text-yellow-500 scale-110' 
                       : 'text-gray-300 hover:text-yellow-400 hover:scale-105'
                   }`}
                 >
-                  <Star className={`h-8 w-8 ${currentResponse >= star ? 'fill-current' : ''}`} />
+                  <Star className={`h-10 w-10 sm:h-8 sm:w-8 ${currentResponse >= star ? 'fill-current' : ''}`} />
                 </button>
               ))}
             </div>
@@ -583,11 +615,11 @@ const SurveyResponse = () => {
                 <span>Extremely likely</span>
               </div>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-1">
               {npsOptions.map((option) => {
                 const isSelected = currentResponse === option;
                 return (
-                  <label key={option} className="flex flex-col items-center space-y-2 cursor-pointer">
+                  <label key={option} className="flex flex-col items-center space-y-2 cursor-pointer min-w-[32px] sm:min-w-[28px]">
                     <input
                       type="radio"
                       name={`question-${question.id}`}
@@ -597,7 +629,7 @@ const SurveyResponse = () => {
                       className="sr-only"
                     />
                     <div className="relative">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                      <div className={`w-12 h-12 sm:w-10 sm:h-10 md:w-8 md:h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
                         isSelected 
                           ? 'border-green-600 bg-green-600 text-white scale-110' 
                           : 'border-gray-300 hover:border-gray-400 hover:scale-105'
@@ -614,7 +646,7 @@ const SurveyResponse = () => {
                         </div>
                       )}
                     </div>
-                    <span className={`text-xs font-medium ${isSelected ? 'text-green-600' : 'text-gray-600'}`}>
+                    <span className={`text-sm sm:text-xs font-medium ${isSelected ? 'text-green-600' : 'text-gray-600'}`}>
                       {option}
                     </span>
                   </label>
@@ -1002,12 +1034,45 @@ const SurveyResponse = () => {
   if (!survey) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <XCircle className="h-8 w-8 text-red-600" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Survey Not Found</h2>
-          <p className="text-gray-600">This survey is not available or has been removed.</p>
+          <p className="text-gray-600 mb-6">This survey is not available or has been removed.</p>
+          
+          {/* Debug Information */}
+          <div className="bg-gray-100 rounded-lg p-4 text-left text-sm">
+            <h3 className="font-semibold text-gray-800 mb-2">Debug Information:</h3>
+            <div className="space-y-1 text-gray-600">
+              <p><strong>Survey ID:</strong> {id}</p>
+              <p><strong>Current URL:</strong> {window.location.href}</p>
+              <p><strong>Base URL:</strong> {window.location.origin}</p>
+              <p><strong>Timestamp:</strong> {new Date().toISOString()}</p>
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-blue-800 text-xs">
+                <strong>Possible causes:</strong>
+              </p>
+              <ul className="text-blue-700 text-xs mt-1 space-y-1">
+                <li>• Survey ID doesn't exist in database</li>
+                <li>• Survey is not published (status ≠ 'published')</li>
+                <li>• Database connection issues</li>
+                <li>• Survey was deleted or moved</li>
+              </ul>
+            </div>
+            <div className="mt-3">
+              <button
+                onClick={() => {
+                  console.log('🔄 Retrying survey fetch...');
+                  fetchSurvey();
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                Retry Loading
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1092,24 +1157,24 @@ const SurveyResponse = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{survey.title}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{survey.title}</h1>
               {survey.description && (
-                <p className="text-gray-600 text-sm mt-1">{survey.description}</p>
+                <p className="text-gray-600 text-sm mt-1 line-clamp-2">{survey.description}</p>
               )}
             </div>
-            <div className="flex items-center space-x-2">
-              <Smile className="h-5 w-5 text-primary-600" />
-              <span className="text-sm text-gray-600">SurveyGuy</span>
+            <div className="flex items-center space-x-2 ml-4">
+              <Smile className="h-5 w-5 text-primary-600 flex-shrink-0" />
+              <span className="text-sm text-gray-600 hidden sm:inline">SurveyGuy</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Survey Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {renderQuestion(currentQuestion)}
       </div>
 

@@ -26,7 +26,6 @@ import {
   Bell,
   Search,
   ChevronDown,
-  Layers,
   TrendingUp,
   Database,
   Globe,
@@ -35,9 +34,7 @@ import {
   Activity,
   Palette,
   Brain,
-  GitBranch,
   Smartphone,
-  Link,
   DollarSign as PaymentIcon,
   MessageSquare
 } from 'lucide-react';
@@ -104,6 +101,7 @@ const ProfessionalLayout = () => {
         { name: 'Draft Surveys', href: '/app/draft-surveys', icon: FileText, badge: null },
         { name: 'Published Surveys', href: '/app/published-surveys', icon: Globe, badge: null },
         { name: 'Survey Builder', href: '/app/builder-v2/new', icon: Plus, badge: null },
+        { name: 'QR Messages', href: '/app/qr-messages', icon: Share2, badge: null },
         { name: 'Reports', href: '/app/reports', icon: BarChart3, badge: null },
         ...(isSuperAdmin ? [
           { name: 'Builder Test', href: '/app/survey-builder-test', icon: Activity, badge: 'Test' },
@@ -133,6 +131,7 @@ const ProfessionalLayout = () => {
       title: 'Events',
       items: filterItemsByPlan([
         { name: 'Events', href: '/app/events', icon: Calendar, badge: null },
+        { name: 'Forms', href: '/app/forms', icon: FileText, badge: null },
         { name: 'Advanced Events', href: '/app/advanced-events', icon: Zap, badge: 'Pro' },
       ])
     },

@@ -46,6 +46,22 @@ const AccountManagement = () => {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportOptions, setExportOptions] = useState({
+    surveys: true,
+    responses: true,
+    events: true,
+    forms: true,
+    qrMessages: true,
+    profile: true
+  });
+  const [availableTables, setAvailableTables] = useState({
+    surveys: true,
+    responses: true,
+    events: true,
+    forms: false,
+    qrMessages: false
+  });
   
   // New state for enhanced features
   const [avatarFile, setAvatarFile] = useState(null);
@@ -705,40 +721,213 @@ const AccountManagement = () => {
     }
   };
 
-  const exportUserData = async () => {
-    try {
-      // Get all user data
-      const [surveysResult, responsesResult, eventsResult] = await Promise.all([
-        supabase.from('surveys').select('*').eq('user_id', user.id),
-        supabase.from('survey_responses').select('*').in('survey_id', 
-          supabase.from('surveys').select('id').eq('user_id', user.id)
-        ),
-        supabase.from('events').select('*').eq('user_id', user.id)
-      ]);
+  const getUserData = async () => {
+    const result = {
+      surveys: [],
+      responses: [],
+      events: [],
+      forms: [],
+      qrMessages: []
+    };
 
+    try {
+      // First get user's surveys to get survey IDs
+      const { data: surveys, error: surveysError } = await supabase
+        .from('surveys')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (surveysError) {
+        console.warn('Error fetching surveys:', surveysError);
+      } else {
+        result.surveys = surveys || [];
+      }
+
+      const surveyIds = result.surveys?.map(s => s.id) || [];
+
+      // Get responses for user's surveys
+      if (surveyIds.length > 0) {
+        const { data: responses, error: responsesError } = await supabase
+          .from('survey_responses')
+          .select('*')
+          .in('survey_id', surveyIds);
+
+        if (responsesError) {
+          console.warn('Error fetching responses:', responsesError);
+        } else {
+          result.responses = responses || [];
+        }
+      }
+
+      // Get events
+      const { data: events, error: eventsError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (eventsError) {
+        console.warn('Error fetching events:', eventsError);
+      } else {
+        result.events = events || [];
+      }
+
+      // Get forms (handle case where table doesn't exist)
+      try {
+        const { data: forms, error: formsError } = await supabase
+          .from('forms')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (formsError) {
+          console.warn('Forms table not found or error fetching forms:', formsError);
+          result.forms = [];
+          setAvailableTables(prev => ({ ...prev, forms: false }));
+        } else {
+          result.forms = forms || [];
+          setAvailableTables(prev => ({ ...prev, forms: true }));
+        }
+      } catch (formsTableError) {
+        console.warn('Forms table does not exist:', formsTableError);
+        result.forms = [];
+        setAvailableTables(prev => ({ ...prev, forms: false }));
+      }
+
+      // Get QR messages (handle case where table doesn't exist)
+      try {
+        const { data: qrMessages, error: qrError } = await supabase
+          .from('qr_messages')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (qrError) {
+          console.warn('QR messages table not found or error fetching QR messages:', qrError);
+          result.qrMessages = [];
+          setAvailableTables(prev => ({ ...prev, qrMessages: false }));
+        } else {
+          result.qrMessages = qrMessages || [];
+          setAvailableTables(prev => ({ ...prev, qrMessages: true }));
+        }
+      } catch (qrTableError) {
+        console.warn('QR messages table does not exist:', qrTableError);
+        result.qrMessages = [];
+        setAvailableTables(prev => ({ ...prev, qrMessages: false }));
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error in getUserData:', error);
+      throw error;
+    }
+  };
+
+  const exportUserData = async (format = 'json', options = null) => {
+    try {
+      toast.loading('Preparing your data export...', { id: 'export' });
+      
+      const data = await getUserData();
+      const selectedOptions = options || exportOptions;
+      
       const exportData = {
-        profile,
-        surveys: surveysResult.data || [],
-        responses: responsesResult.data || [],
-        events: eventsResult.data || [],
-        exportedAt: new Date().toISOString()
+        user: selectedOptions.profile ? {
+          id: user.id,
+          email: user.email,
+          profile: profile
+        } : null,
+        surveys: selectedOptions.surveys ? data.surveys : [],
+        responses: selectedOptions.responses ? data.responses : [],
+        events: selectedOptions.events ? data.events : [],
+        forms: selectedOptions.forms ? data.forms : [],
+        qrMessages: selectedOptions.qrMessages ? data.qrMessages : [],
+        exportInfo: {
+          exportedAt: new Date().toISOString(),
+          totalSurveys: selectedOptions.surveys ? data.surveys.length : 0,
+          totalResponses: selectedOptions.responses ? data.responses.length : 0,
+          totalEvents: selectedOptions.events ? data.events.length : 0,
+          totalForms: selectedOptions.forms ? data.forms.length : 0,
+          totalQRMessages: selectedOptions.qrMessages ? data.qrMessages.length : 0,
+          exportOptions: selectedOptions
+        }
       };
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      let blob, filename, mimeType;
+
+      if (format === 'json') {
+        blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        filename = `surveyguy-data-export-${new Date().toISOString().split('T')[0]}.json`;
+        mimeType = 'application/json';
+      } else if (format === 'csv') {
+        const csvData = convertToCSV(exportData);
+        blob = new Blob([csvData], { type: 'text/csv' });
+        filename = `surveyguy-data-export-${new Date().toISOString().split('T')[0]}.csv`;
+        mimeType = 'text/csv';
+      }
+
+      // Create and download file
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `surveyguy-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success('User data exported successfully');
+      const selectedCount = Object.values(selectedOptions).filter(Boolean).length;
+      toast.success(`Data exported successfully! ${exportData.exportInfo.totalSurveys} surveys, ${exportData.exportInfo.totalResponses} responses`, { id: 'export' });
+      
+      if (showExportModal) {
+        setShowExportModal(false);
+      }
     } catch (error) {
       console.error('Error exporting data:', error);
-      toast.error('Failed to export data');
+      toast.error(`Failed to export data: ${error.message}`, { id: 'export' });
     }
+  };
+
+  const convertToCSV = (data) => {
+    const csvRows = [];
+    
+    // Add metadata
+    csvRows.push('Export Information');
+    csvRows.push(`Exported At,${data.exportInfo.exportedAt}`);
+    csvRows.push(`Total Surveys,${data.exportInfo.totalSurveys}`);
+    csvRows.push(`Total Responses,${data.exportInfo.totalResponses}`);
+    csvRows.push(`Total Events,${data.exportInfo.totalEvents}`);
+    csvRows.push(`Total Forms,${data.exportInfo.totalForms}`);
+    csvRows.push(`Total QR Messages,${data.exportInfo.totalQRMessages}`);
+    csvRows.push('');
+    
+    // Add surveys
+    if (data.surveys.length > 0) {
+      csvRows.push('Surveys');
+      csvRows.push('ID,Title,Status,Created At,Updated At,Description');
+      data.surveys.forEach(survey => {
+        csvRows.push(`${survey.id},"${survey.title}","${survey.status}","${survey.created_at}","${survey.updated_at}","${survey.description || ''}"`);
+      });
+      csvRows.push('');
+    }
+    
+    // Add responses
+    if (data.responses.length > 0) {
+      csvRows.push('Survey Responses');
+      csvRows.push('ID,Survey ID,Response Data,Submitted At,IP Address');
+      data.responses.forEach(response => {
+        csvRows.push(`${response.id},${response.survey_id},"${JSON.stringify(response.response_data)}","${response.submitted_at}","${response.ip_address || ''}"`);
+      });
+      csvRows.push('');
+    }
+    
+    // Add events
+    if (data.events.length > 0) {
+      csvRows.push('Events');
+      csvRows.push('ID,Title,Description,Date,Location,Status');
+      data.events.forEach(event => {
+        csvRows.push(`${event.id},"${event.title}","${event.description || ''}","${event.event_date}","${event.location || ''}","${event.status}"`);
+      });
+      csvRows.push('');
+    }
+    
+    return csvRows.join('\n');
   };
 
   const tabs = [
@@ -1539,15 +1728,51 @@ const AccountManagement = () => {
                     <div className="border border-gray-200 rounded-lg p-6">
                       <h3 className="font-medium text-gray-900 mb-4">Export Your Data</h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        Download a copy of all your data including surveys, responses, and account information.
+                        Download a copy of all your data including surveys, responses, events, forms, and account information.
                       </p>
-                      <button
-                        onClick={exportUserData}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Export Data</span>
-                      </button>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button
+                          onClick={() => exportUserData('json')}
+                          className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Export as JSON</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => exportUserData('csv')}
+                          className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Export as CSV</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => setShowExportModal(true)}
+                          className="flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          <Archive className="w-4 h-4" />
+                          <span>Selective Export</span>
+                        </button>
+                      </div>
+                      
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <h4 className="text-sm font-medium text-blue-900 mb-2">What's included in your export:</h4>
+                        <ul className="text-xs text-blue-800 space-y-1">
+                          <li>• All your surveys and their configurations</li>
+                          <li>• Complete survey response data</li>
+                          <li>• Events and event registrations</li>
+                          {availableTables.forms && <li>• Custom forms and submissions</li>}
+                          {availableTables.qrMessages && <li>• QR messages and analytics</li>}
+                          <li>• Account profile information</li>
+                        </ul>
+                        {(!availableTables.forms || !availableTables.qrMessages) && (
+                          <p className="text-xs text-blue-600 mt-2">
+                            Note: Some features may not be available in your current setup.
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Backup Creation */}
@@ -1839,6 +2064,87 @@ const AccountManagement = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Selective Export Modal */}
+      <AnimatePresence>
+        {showExportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Selective Data Export</h3>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-6">
+                Choose which data you want to include in your export:
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  { key: 'surveys', label: 'Surveys', description: 'All your surveys and configurations', alwaysAvailable: true },
+                  { key: 'responses', label: 'Survey Responses', description: 'All response data from your surveys', alwaysAvailable: true },
+                  { key: 'events', label: 'Events', description: 'Events and event registrations', alwaysAvailable: true },
+                  { key: 'forms', label: 'Custom Forms', description: 'Forms and form submissions', alwaysAvailable: false },
+                  { key: 'qrMessages', label: 'QR Messages', description: 'QR codes and messages', alwaysAvailable: false },
+                  { key: 'profile', label: 'Profile Data', description: 'Account and profile information', alwaysAvailable: true }
+                ].filter(option => option.alwaysAvailable || availableTables[option.key]).map((option) => (
+                  <div key={option.key} className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id={option.key}
+                      checked={exportOptions[option.key]}
+                      onChange={(e) => setExportOptions({
+                        ...exportOptions,
+                        [option.key]: e.target.checked
+                      })}
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor={option.key} className="text-sm font-medium text-gray-900">
+                        {option.label}
+                        {!option.alwaysAvailable && !availableTables[option.key] && (
+                          <span className="ml-2 text-xs text-gray-400">(Not available)</span>
+                        )}
+                      </label>
+                      <p className="text-xs text-gray-500">{option.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex items-center space-x-3 mt-6">
+                <button
+                  onClick={() => exportUserData('json', exportOptions)}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Export as JSON
+                </button>
+                <button
+                  onClick={() => exportUserData('csv', exportOptions)}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Export as CSV
+                </button>
               </div>
             </motion.div>
           </motion.div>

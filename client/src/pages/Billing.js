@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { getPlanPricing } from '../services/paystackService';
 import { motion } from 'framer-motion';
 import InvoiceManager from '../components/InvoiceManager';
 import BillingAnalytics from '../components/BillingAnalytics';
@@ -39,6 +41,7 @@ import {
 
 const Billing = () => {
   const { user, userProfile } = useAuth();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview'); // overview, history, payment-methods, settings, upgrade
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,14 @@ const Billing = () => {
   const [sortOrder, setSortOrder] = useState('desc'); // desc, asc
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState(null);
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [newPaymentMethod, setNewPaymentMethod] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    cardholderName: '',
+    isDefault: false
+  });
 
   // Handle plan upgrades
   const handleUpgrade = async (planType) => {
@@ -105,6 +116,80 @@ const Billing = () => {
     GBP: { symbol: '£', name: 'British Pound', flag: '🇬🇧' },
     GHS: { symbol: 'GH¢', name: 'Ghanaian Cedi', flag: '🇬🇭' },
     NGN: { symbol: '₦', name: 'Nigerian Naira', flag: '🇳🇬' }
+  };
+
+  // Get plan pricing (using GHS as base currency)
+  const getPlanPrice = (planId, cycle = 'monthly') => {
+    const pricing = getPlanPricing();
+    return pricing[planId]?.[cycle] || 0;
+  };
+
+  // Handle adding new payment method
+  const handleAddPaymentMethod = async () => {
+    try {
+      setLoading(true);
+      
+      // Validate card number (basic validation)
+      const cardNumber = newPaymentMethod.cardNumber.replace(/\s/g, '');
+      if (cardNumber.length < 13 || cardNumber.length > 19) {
+        toast.error('Please enter a valid card number');
+        return;
+      }
+
+      // Validate expiry date
+      const [month, year] = newPaymentMethod.expiryDate.split('/');
+      if (!month || !year || month.length !== 2 || year.length !== 2) {
+        toast.error('Please enter a valid expiry date (MM/YY)');
+        return;
+      }
+
+      // Validate CVV
+      if (newPaymentMethod.cvv.length < 3 || newPaymentMethod.cvv.length > 4) {
+        toast.error('Please enter a valid CVV');
+        return;
+      }
+
+      // In a real application, you would send the payment method data to your backend
+      // For now, we'll simulate adding it to the local state
+      const newMethod = {
+        id: Date.now().toString(),
+        type: 'VISA', // You could detect this from card number
+        last4: cardNumber.slice(-4),
+        expiryDate: newPaymentMethod.expiryDate,
+        cardholderName: newPaymentMethod.cardholderName,
+        isDefault: newPaymentMethod.isDefault,
+        addedAt: new Date().toISOString()
+      };
+
+      // Add to payment methods list
+      setPaymentMethods(prev => {
+        // If this is set as default, remove default from others
+        if (newPaymentMethod.isDefault) {
+          return [newMethod, ...prev.map(method => ({ ...method, isDefault: false }))];
+        }
+        return [...prev, newMethod];
+      });
+
+      // Reset form
+      setNewPaymentMethod({
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardholderName: '',
+        isDefault: false
+      });
+
+      // Close modal
+      setShowAddPaymentModal(false);
+
+      toast.success('Payment method added successfully!');
+      
+    } catch (error) {
+      console.error('Error adding payment method:', error);
+      toast.error('Failed to add payment method. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchBillingData = useCallback(async () => {
@@ -209,13 +294,38 @@ const Billing = () => {
     }
   }, [user, fetchBillingData]);
 
+  // Handle navigation state from pricing page
+  useEffect(() => {
+    if (location.state?.selectedPlan) {
+      const { selectedPlan, billingCycle } = location.state;
+      
+      // Set billing cycle if provided
+      if (billingCycle) {
+        setBillingCycle(billingCycle);
+      }
+      
+      // Switch to upgrade tab and trigger upgrade
+      setActiveTab('upgrade');
+      
+      // Show a message and trigger upgrade after a short delay
+      toast.success(`Ready to upgrade to ${selectedPlan} plan! 💳`);
+      
+      setTimeout(() => {
+        handleUpgrade(selectedPlan);
+      }, 1000);
+      
+      // Clear the navigation state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, handleUpgrade]);
+
   const formatCurrency = (amount, currency = selectedCurrency) => {
-    const currencyInfo = CURRENCIES[currency];
-    if (!currencyInfo) return `${amount}`;
+    // Default to USD if currency is undefined or not valid
+    const validCurrency = currency && CURRENCIES[currency] ? currency : 'USD';
     
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency,
+      currency: validCurrency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(amount);
@@ -537,7 +647,10 @@ const Billing = () => {
                     <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Free Plan</h3>
                     <p className="text-gray-600 mb-4">You're currently on the free plan</p>
-                    <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <button 
+                      onClick={() => setActiveTab('upgrade')}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
                       Upgrade Now
                     </button>
                 </div>
@@ -586,7 +699,10 @@ const Billing = () => {
                   <h3 className="font-semibold text-gray-900">Download Invoices</h3>
                   </div>
                 <p className="text-gray-600 text-sm mb-4">Get PDF copies of all your invoices</p>
-                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                <button 
+                  onClick={() => setActiveTab('invoices')}
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                >
                   View All Invoices →
                 </button>
                 </div>
@@ -599,7 +715,10 @@ const Billing = () => {
                   <h3 className="font-semibold text-gray-900">Payment Methods</h3>
                 </div>
                 <p className="text-gray-600 text-sm mb-4">Manage your cards and payment options</p>
-                <button className="text-green-600 hover:text-green-700 font-medium text-sm">
+                <button 
+                  onClick={() => setActiveTab('payment-methods')}
+                  className="text-green-600 hover:text-green-700 font-medium text-sm"
+                >
                   Manage Methods →
                 </button>
                 </div>
@@ -612,9 +731,12 @@ const Billing = () => {
                   <h3 className="font-semibold text-gray-900">Billing Alerts</h3>
                 </div>
                 <p className="text-gray-600 text-sm mb-4">Set up notifications for payments</p>
-                <button className="text-purple-600 hover:text-purple-700 font-medium text-sm">
+                <button 
+                  onClick={() => setActiveTab('settings')}
+                  className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+                >
                   Configure Alerts →
-                  </button>
+                </button>
               </div>
             </motion.div>
         </div>
@@ -782,7 +904,10 @@ const Billing = () => {
                   <h2 className="text-xl font-semibold text-gray-900">Payment Methods</h2>
                   <p className="text-gray-600 text-sm">Manage your cards and payment options</p>
                 </div>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                <button 
+                  onClick={() => setShowAddPaymentModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Payment Method
                 </button>
@@ -794,9 +919,12 @@ const Billing = () => {
                   <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No payment methods</h3>
                   <p className="text-gray-600 mb-4">Add a payment method to manage your subscriptions</p>
-                  <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  <button 
+                    onClick={() => setShowAddPaymentModal(true)}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
                     Add Your First Card
-              </button>
+                  </button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1039,7 +1167,7 @@ const Billing = () => {
                     <Star className="w-6 h-6 text-gray-600" />
                 </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Free</h3>
-                  <div className="text-3xl font-bold text-gray-900 mb-1">$0</div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">₵0</div>
                   <p className="text-gray-600 mb-6">per month</p>
                   
                   <ul className="text-left space-y-3 mb-6">
@@ -1097,7 +1225,7 @@ const Billing = () => {
                     <Zap className="w-6 h-6 text-blue-600" />
                 </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Pro</h3>
-                  <div className="text-3xl font-bold text-gray-900 mb-1">$49.99</div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">₵{getPlanPrice('pro', 'monthly')}</div>
                   <p className="text-gray-600 mb-6">per month</p>
                   
                   <ul className="text-left space-y-3 mb-6">
@@ -1158,7 +1286,7 @@ const Billing = () => {
                     <Crown className="w-6 h-6 text-purple-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
-                  <div className="text-3xl font-bold text-gray-900 mb-1">$149.99</div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">₵{getPlanPrice('enterprise', 'monthly')}</div>
                   <p className="text-gray-600 mb-6">per month</p>
                   
                   <ul className="text-left space-y-3 mb-6">
@@ -1294,6 +1422,200 @@ const Billing = () => {
             </div>
           </div>
         )}
+
+        {/* Billing Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            {/* Billing Preferences */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Preferences</h2>
+              
+              <div className="space-y-6">
+                {/* Billing Cycle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Billing Cycle</h3>
+                    <p className="text-sm text-gray-600">Choose your preferred billing frequency</p>
+                  </div>
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setBillingCycle('monthly')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        billingCycle === 'monthly'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                    <button
+                      onClick={() => setBillingCycle('annually')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        billingCycle === 'annually'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Annually
+                    </button>
+                  </div>
+                </div>
+
+                {/* Currency */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Display Currency</h3>
+                    <p className="text-sm text-gray-600">Choose your preferred currency for billing</p>
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                      className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+                    >
+                      <span className="text-lg">{CURRENCIES[selectedCurrency]?.flag}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {CURRENCIES[selectedCurrency]?.symbol} {selectedCurrency}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </button>
+                    
+                    {showCurrencyDropdown && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border z-50">
+                        {Object.entries(CURRENCIES).map(([code, currency]) => (
+                          <button
+                            key={code}
+                            onClick={() => {
+                              setSelectedCurrency(code);
+                              setShowCurrencyDropdown(false);
+                            }}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-xl last:rounded-b-xl ${
+                              selectedCurrency === code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            }`}
+                          >
+                            <span className="text-xl">{currency.flag}</span>
+                            <div className="flex-1">
+                              <p className="font-medium">{currency.symbol} {code}</p>
+                              <p className="text-xs text-gray-500">{currency.name}</p>
+                            </div>
+                            {selectedCurrency === code && (
+                              <CheckCircle className="w-4 h-4 text-blue-600" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Auto-renewal */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Auto-renewal</h3>
+                    <p className="text-sm text-gray-600">Automatically renew your subscription</p>
+                  </div>
+                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors">
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
+                  </button>
+                </div>
+
+                {/* Email Notifications */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Email Notifications</h3>
+                    <p className="text-sm text-gray-600">Receive billing and payment notifications</p>
+                  </div>
+                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors">
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Address */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Address</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter company name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax ID</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter tax ID"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter billing address"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter city"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option>Ghana</option>
+                    <option>Nigeria</option>
+                    <option>Kenya</option>
+                    <option>South Africa</option>
+                    <option>United States</option>
+                    <option>United Kingdom</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  Save Changes
+                </button>
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+              <h2 className="text-xl font-semibold text-red-600 mb-6">Danger Zone</h2>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Cancel Subscription</h3>
+                    <p className="text-sm text-gray-600">Cancel your subscription and lose access to premium features</p>
+                  </div>
+                  <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                    Cancel Subscription
+                  </button>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Delete Account</h3>
+                    <p className="text-sm text-gray-600">Permanently delete your account and all data</p>
+                  </div>
+                  <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                    Delete Account
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Paystack Payment Modal */}
@@ -1319,6 +1641,154 @@ const Billing = () => {
                 setSelectedPlanForPayment(null);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Add Payment Method Modal */}
+      {showAddPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Add Payment Method</h2>
+                <button
+                  onClick={() => setShowAddPaymentModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleAddPaymentMethod();
+              }} className="space-y-4">
+                {/* Card Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Card Number
+                  </label>
+                  <input
+                    type="text"
+                    value={newPaymentMethod.cardNumber}
+                    onChange={(e) => setNewPaymentMethod({
+                      ...newPaymentMethod,
+                      cardNumber: e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ')
+                    })}
+                    placeholder="1234 5678 9012 3456"
+                    maxLength="19"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                {/* Cardholder Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cardholder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newPaymentMethod.cardholderName}
+                    onChange={(e) => setNewPaymentMethod({
+                      ...newPaymentMethod,
+                      cardholderName: e.target.value
+                    })}
+                    placeholder="John Doe"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                {/* Expiry Date and CVV */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expiry Date
+                    </label>
+                    <input
+                      type="text"
+                      value={newPaymentMethod.expiryDate}
+                      onChange={(e) => setNewPaymentMethod({
+                        ...newPaymentMethod,
+                        expiryDate: e.target.value.replace(/\D/g, '').replace(/(\d{2})(?=\d)/g, '$1/')
+                      })}
+                      placeholder="MM/YY"
+                      maxLength="5"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      CVV
+                    </label>
+                    <input
+                      type="text"
+                      value={newPaymentMethod.cvv}
+                      onChange={(e) => setNewPaymentMethod({
+                        ...newPaymentMethod,
+                        cvv: e.target.value.replace(/\D/g, '')
+                      })}
+                      placeholder="123"
+                      maxLength="4"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Default Payment Method */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isDefault"
+                    checked={newPaymentMethod.isDefault}
+                    onChange={(e) => setNewPaymentMethod({
+                      ...newPaymentMethod,
+                      isDefault: e.target.checked
+                    })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-700">
+                    Set as default payment method
+                  </label>
+                </div>
+
+                {/* Security Notice */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <Shield className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900">Secure Payment</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Your payment information is encrypted and secure. We use industry-standard security measures to protect your data.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPaymentModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Add Payment Method
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

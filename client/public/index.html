@@ -11,8 +11,33 @@
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Performance optimizations -->
+    <link rel="dns-prefetch" href="//js.paystack.co">
+    <link rel="dns-prefetch" href="//api.supabase.co">
+    <link rel="preconnect" href="https://js.paystack.co" crossorigin>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/static/css/main.css" as="style">
+    <link rel="preload" href="/static/js/main.js" as="script">
+    
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <title>SurveyGuy - Modern Survey Platform</title>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw-optimized.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

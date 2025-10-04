@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { X } from 'lucide-react';
+import { X, QrCode, Download, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import QRCode from 'qrcode';
 
 const CreateEventModal = ({ event, onClose, onSuccess }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('standard');
+  const [createdEvent, setCreatedEvent] = useState(null);
+  const [qrCodeDataURL, setQrCodeDataURL] = useState('');
+  const [showQRCode, setShowQRCode] = useState(false);
   
   const {
     register,
@@ -112,6 +116,12 @@ const CreateEventModal = ({ event, onClose, onSuccess }) => {
           toast.error(`Failed to create event: ${response.error}`);
         } else {
           toast.success('Event created successfully!');
+          setCreatedEvent(response.event);
+          
+          // Generate QR code for the new event
+          await generateQRCode(response.event);
+          setShowQRCode(true);
+          
           reset();
           onSuccess();
         }
@@ -125,6 +135,47 @@ const CreateEventModal = ({ event, onClose, onSuccess }) => {
   };
 
   const currentTemplate = eventTemplates.find(t => t.id === selectedTemplate);
+
+  // Generate QR code for event
+  const generateQRCode = async (eventData) => {
+    try {
+      const eventUrl = `${window.location.origin}/event/${eventData.id}`;
+      const qrDataURL = await QRCode.toDataURL(eventUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeDataURL(qrDataURL);
+      return qrDataURL;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      toast.error('Failed to generate QR code');
+      return null;
+    }
+  };
+
+  // Download QR code
+  const downloadQRCode = () => {
+    if (qrCodeDataURL) {
+      const link = document.createElement('a');
+      link.download = `${createdEvent?.title || 'event'}-qrcode.png`;
+      link.href = qrCodeDataURL;
+      link.click();
+      toast.success('QR code downloaded!');
+    }
+  };
+
+  // Copy event URL
+  const copyEventUrl = () => {
+    if (createdEvent) {
+      const eventUrl = `${window.location.origin}/event/${createdEvent.id}`;
+      navigator.clipboard.writeText(eventUrl);
+      toast.success('Event URL copied to clipboard!');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -397,6 +448,59 @@ const CreateEventModal = ({ event, onClose, onSuccess }) => {
             </button>
           </div>
         </form>
+
+        {/* QR Code Display Section */}
+        {showQRCode && createdEvent && (
+          <div className="border-t border-gray-200 p-6 bg-gray-50">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-center">
+                <QrCode className="w-5 h-5 mr-2" />
+                Event QR Code
+              </h3>
+              
+              {qrCodeDataURL ? (
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <img 
+                      src={qrCodeDataURL} 
+                      alt="Event QR Code" 
+                      className="border border-gray-200 rounded-lg"
+                    />
+                  </div>
+                  
+                  <p className="text-sm text-gray-600">
+                    Share this QR code to allow easy event registration
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={downloadQRCode}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download QR Code
+                    </button>
+                    
+                    <button
+                      onClick={copyEventUrl}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Copy Event URL
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                  <p className="text-sm text-gray-600">Generating QR code...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

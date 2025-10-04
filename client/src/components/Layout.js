@@ -48,6 +48,7 @@ const Layout = () => {
         { name: 'Professional Creator', href: '/app/templates/professional-events', icon: Sparkles, badge: 'New' }
       ]
     },
+    { name: 'Teams', href: '/app/teams', icon: Users, badge: 'New' },
     { name: 'Surveys', href: '/app/surveys', icon: FileText },
     { name: 'Templates', href: '/app/templates', icon: Sparkles },
     { name: 'Survey Builder', href: '/app/builder', icon: Plus },

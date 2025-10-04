@@ -28,7 +28,7 @@ const UpgradePrompt = ({
   const planDetails = {
     pro: {
       name: 'Pro',
-      price: '$49.99/month',
+      price: '$20.00/month',
       icon: <Zap className="w-6 h-6" />,
       color: 'from-blue-500 to-purple-600',
       features: [
@@ -43,7 +43,7 @@ const UpgradePrompt = ({
     },
     enterprise: {
       name: 'Enterprise',
-      price: '$149.99/month',
+      price: '$99.99/month',
       icon: <Crown className="w-6 h-6" />,
       color: 'from-purple-600 to-pink-600',
       features: [

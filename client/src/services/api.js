@@ -647,6 +647,122 @@ export const responseAPI = {
     }
   },
 
+  // Get all responses for a user (for reports)
+  async getResponses(userId, options = {}) {
+    try {
+      // First get all surveys for this user
+      const { data: userSurveys, error: surveysError } = await supabase
+        .from('surveys')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (surveysError) {
+        console.error('Error fetching user surveys:', surveysError);
+        return { responses: [], error: surveysError.message };
+      }
+
+      if (!userSurveys || userSurveys.length === 0) {
+        return { responses: [], error: null };
+      }
+
+      // Get responses for all user surveys
+      const surveyIds = userSurveys.map(s => s.id);
+      const limit = options.limit || 1000;
+      
+      const { data, error } = await supabase
+        .from('survey_responses')
+        .select('*')
+        .in('survey_id', surveyIds)
+        .order('submitted_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching user responses:', error);
+        return { responses: [], error: error.message };
+      }
+
+      return { responses: data || [], error: null };
+    } catch (error) {
+      console.error('Error in getResponses:', error);
+      return { responses: [], error: error.message };
+    }
+  },
+
+  // Fix response counts for a user (debugging method)
+  async fixResponseCounts(userId) {
+    try {
+      console.log('🔧 Fixing response counts for user:', userId);
+      
+      // Get all surveys for this user
+      const { data: userSurveys, error: surveysError } = await supabase
+        .from('surveys')
+        .select('id, title')
+        .eq('user_id', userId);
+
+      if (surveysError) {
+        throw surveysError;
+      }
+
+      if (!userSurveys || userSurveys.length === 0) {
+        return { message: 'No surveys found for user', error: null };
+      }
+
+      let totalResponses = 0;
+      const surveyCounts = [];
+
+      // Count responses for each survey
+      for (const survey of userSurveys) {
+        const { count, error: countError } = await supabase
+          .from('survey_responses')
+          .select('*', { count: 'exact', head: true })
+          .eq('survey_id', survey.id);
+
+        if (countError) {
+          console.error(`Error counting responses for survey ${survey.id}:`, countError);
+          continue;
+        }
+
+        const responseCount = count || 0;
+        totalResponses += responseCount;
+        surveyCounts.push({
+          surveyId: survey.id,
+          surveyTitle: survey.title,
+          responseCount: responseCount
+        });
+      }
+
+      // Update user analytics
+      const { error: analyticsError } = await supabase
+        .from('user_analytics')
+        .upsert({
+          user_id: userId,
+          total_surveys: userSurveys.length,
+          total_responses: totalResponses,
+          updated_at: new Date().toISOString()
+        });
+
+      if (analyticsError) {
+        console.error('Error updating user analytics:', analyticsError);
+      }
+
+      console.log('✅ Response counts fixed:', {
+        totalSurveys: userSurveys.length,
+        totalResponses: totalResponses,
+        surveyCounts: surveyCounts
+      });
+
+      return {
+        totalSurveys: userSurveys.length,
+        totalResponses: totalResponses,
+        surveyCounts: surveyCounts,
+        error: null
+      };
+    } catch (error) {
+      console.error('Error fixing response counts:', error);
+      return { error: error.message };
+    }
+  },
+
   // Validate survey response
   validateResponse(survey, responses) {
     const errors = {};
@@ -878,6 +994,123 @@ export const analyticsAPI = {
       console.error('Error fetching survey analytics:', error);
       return { error: error.message };
     }
+  },
+
+  // Get detailed analytics including demographics
+  async getDetailedAnalytics(userId) {
+    try {
+      // Get all user's surveys
+      const { data: surveys } = await supabase
+        .from('surveys')
+        .select('id, title')
+        .eq('user_id', userId);
+
+      if (!surveys || surveys.length === 0) {
+        return { demographics: null };
+      }
+
+      const surveyIds = surveys.map(s => s.id);
+
+      // Get all responses for user's surveys
+      const { data: responses } = await supabase
+        .from('survey_responses')
+        .select('responses, submitted_at')
+        .in('survey_id', surveyIds);
+
+      if (!responses || responses.length === 0) {
+        return { demographics: null };
+      }
+
+      // Extract demographics from responses
+      const demographics = this.extractDemographicsFromResponses(responses);
+
+      return { demographics };
+    } catch (error) {
+      console.error('Error fetching detailed analytics:', error);
+      return { demographics: null, error: error.message };
+    }
+  },
+
+  // Extract demographics from survey responses
+  extractDemographicsFromResponses(responses) {
+    const ageGroups = {};
+    const locations = {};
+
+    responses.forEach(response => {
+      if (response.responses) {
+        // Extract age data
+        const ageData = this.extractAgeFromResponse(response.responses);
+        if (ageData) {
+          ageGroups[ageData] = (ageGroups[ageData] || 0) + 1;
+        }
+
+        // Extract location data
+        const locationData = this.extractLocationFromResponse(response.responses);
+        if (locationData) {
+          locations[locationData] = (locations[locationData] || 0) + 1;
+        }
+      }
+    });
+
+    const totalResponses = responses.length;
+
+    // Convert to arrays with percentages
+    const ageGroupsArray = Object.entries(ageGroups).map(([range, count]) => ({
+      range,
+      count,
+      percentage: count / totalResponses
+    }));
+
+    const locationsArray = Object.entries(locations).map(([country, count]) => ({
+      country,
+      count,
+      percentage: count / totalResponses
+    }));
+
+    return {
+      ageGroups: ageGroupsArray,
+      locations: locationsArray
+    };
+  },
+
+  // Extract age from response data
+  extractAgeFromResponse(responses) {
+    if (typeof responses === 'string') {
+      try {
+        responses = JSON.parse(responses);
+      } catch {
+        return null;
+      }
+    }
+
+    // Look for age-related questions
+    for (const [questionId, answer] of Object.entries(responses)) {
+      if (questionId.toLowerCase().includes('age') && typeof answer === 'string') {
+        return answer;
+      }
+    }
+    return null;
+  },
+
+  // Extract location from response data
+  extractLocationFromResponse(responses) {
+    if (typeof responses === 'string') {
+      try {
+        responses = JSON.parse(responses);
+      } catch {
+        return null;
+      }
+    }
+
+    // Look for location-related questions
+    for (const [questionId, answer] of Object.entries(responses)) {
+      if ((questionId.toLowerCase().includes('location') || 
+           questionId.toLowerCase().includes('country') ||
+           questionId.toLowerCase().includes('region')) && typeof answer === 'string') {
+        return answer;
+      }
+    }
+    return null;
   },
 
   // Helper: Generate trend data
@@ -1474,8 +1707,8 @@ export const adminAPI = {
   getPlanPrice(planName) {
     const prices = {
       'free': 0,
-      'pro': 49.99,
-      'enterprise': 149.99
+      'pro': 20.00,
+      'enterprise': 99.99
     };
     return prices[planName] || 0;
   },
@@ -2063,6 +2296,22 @@ export const eventAPI = {
     }
   },
 
+  // Verify payment with Paystack
+  async verifyPayment(reference) {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-paystack-payment', {
+        body: { reference }
+      });
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      return { data: null, error: error.message };
+    }
+  },
+
   // Update registration status
   async updateRegistrationStatus(registrationId, status) {
     try {
@@ -2102,17 +2351,35 @@ export const teamAPI = {
         .eq('team_owner_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // If table doesn't exist, return empty array (team feature not set up)
+        if (error.code === '42P01' || error.message?.includes('relation "team_members" does not exist')) {
+          console.log('Team members table not found - team feature not configured');
+          return { teamMembers: [], error: null };
+        }
+        throw error;
+      }
       return { teamMembers: data || [], error: null };
     } catch (error) {
       console.error('Error fetching team members:', error);
-      return { teamMembers: [], error: error.message };
+      // Return empty array instead of error to prevent UI crashes
+      return { teamMembers: [], error: null };
     }
   },
 
   // Invite team member
   async inviteTeamMember(teamOwnerId, memberEmail, role = 'member', permissions = []) {
     try {
+      // Check if team_members table exists first
+      const { error: testError } = await supabase
+        .from('team_members')
+        .select('id')
+        .limit(1);
+
+      if (testError && (testError.code === '42P01' || testError.message?.includes('relation "team_members" does not exist'))) {
+        return { teamMember: null, error: 'Team collaboration feature is not set up. Please contact support to enable this feature.' };
+      }
+
       // First check if user exists
       const { data: existingUser } = await supabase
         .from('profiles')

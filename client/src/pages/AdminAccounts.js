@@ -41,6 +41,7 @@ const AdminAccounts = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [createForm, setCreateForm] = useState({
     full_name: '',
@@ -156,6 +157,27 @@ const AdminAccounts = () => {
     } catch (error) {
       console.error('Error updating user:', error);
       toast.error('Failed to update user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Quick approve/unapprove user
+  const handleQuickApprove = async (userId, isActive) => {
+    setLoading(true);
+    
+    try {
+      const response = await api.admin.updateUser(userId, { is_active: isActive });
+      
+      if (response.error) {
+        toast.error(`Failed to ${isActive ? 'approve' : 'unapprove'} user: ${response.error}`);
+      } else {
+        toast.success(`User ${isActive ? 'approved' : 'unapproved'} successfully!`);
+        fetchAccounts();
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast.error(`Failed to ${isActive ? 'approve' : 'unapprove'} user`);
     } finally {
       setLoading(false);
     }
@@ -450,7 +472,7 @@ const AdminAccounts = () => {
                             {new Date(account.created_at).toLocaleDateString()}
                         </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                                 <button
                           onClick={() => {
                             setSelectedAccount(account);
@@ -458,20 +480,37 @@ const AdminAccounts = () => {
                             setShowEditModal(true);
                           }}
                           className="text-blue-600 hover:text-blue-700 p-1"
+                          title="Edit User"
                         >
                           <Edit size={16} />
                                 </button>
+                        
                         {account.email !== 'infoajumapro@gmail.com' && (
-                                <button
-                            onClick={() => {
-                              setSelectedAccount(account);
-                              setShowDeleteModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-700 p-1"
-                          >
-                            <Trash2 size={16} />
-                              </button>
-                            )}
+                          <>
+                            <button
+                              onClick={() => handleQuickApprove(account.id, !account.is_active)}
+                              className={`p-1 ${
+                                account.is_active 
+                                  ? 'text-red-600 hover:text-red-700' 
+                                  : 'text-green-600 hover:text-green-700'
+                              }`}
+                              title={account.is_active ? 'Unapprove Account' : 'Approve Account'}
+                            >
+                              {account.is_active ? <UserX size={16} /> : <UserCheck size={16} />}
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                setSelectedAccount(account);
+                                setShowDeleteModal(true);
+                              }}
+                              className="text-red-600 hover:text-red-700 p-1"
+                              title="Delete User"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
                           </div>
                         </td>
                       </motion.tr>
@@ -682,6 +721,28 @@ const AdminAccounts = () => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showEditPassword ? 'text' : 'password'}
+                        value={editForm.password || ''}
+                        onChange={(e) => setEditForm({...editForm, password: e.target.value})}
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="(leave blank to keep current)"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showEditPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -715,18 +776,54 @@ const AdminAccounts = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={editForm.is_active || false}
-                    onChange={(e) => setEditForm({...editForm, is_active: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    disabled={selectedAccount.email === 'infoajumapro@gmail.com'}
-                  />
-                  <label htmlFor="is_active" className="text-sm text-gray-700">
-                    Account Active
-                  </label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">
+                      Account Status
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      {editForm.is_active ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <UserCheck className="w-3 h-3 mr-1" />
+                          Approved
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <UserX className="w-3 h-3 mr-1" />
+                          Not Approved
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditForm({...editForm, is_active: true})}
+                      disabled={selectedAccount.email === 'infoajumapro@gmail.com' || editForm.is_active}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        editForm.is_active 
+                          ? 'bg-green-100 text-green-700 cursor-not-allowed' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      <UserCheck className="w-4 h-4 inline mr-1" />
+                      Approve Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditForm({...editForm, is_active: false})}
+                      disabled={selectedAccount.email === 'infoajumapro@gmail.com' || !editForm.is_active}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        !editForm.is_active 
+                          ? 'bg-red-100 text-red-700 cursor-not-allowed' 
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                    >
+                      <UserX className="w-4 h-4 inline mr-1" />
+                      Unapprove Account
+                    </button>
+                  </div>
                 </div>
 
                 {selectedAccount.email === 'infoajumapro@gmail.com' && (

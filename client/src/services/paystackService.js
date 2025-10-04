@@ -3,13 +3,16 @@
  * Handles all Paystack payment operations
  */
 
+import currencyService from './currencyService';
+
 // Get Paystack configuration
 export const getPaystackConfig = () => {
   const isTestMode = process.env.REACT_APP_PAYMENT_MODE !== 'live';
   const publicKey = isTestMode
-    ? process.env.REACT_APP_PAYSTACK_PUBLIC_KEY_TEST || 'pk_test_xxxxx'
-    : process.env.REACT_APP_PAYSTACK_PUBLIC_KEY_LIVE || 'pk_live_xxxxx';
+    ? process.env.REACT_APP_PAYSTACK_PUBLIC_KEY_TEST || 'pk_test_49027c3c3accfd7fa0ae698fae14f8d30ee7699b'
+    : process.env.REACT_APP_PAYSTACK_PUBLIC_KEY_LIVE || 'pk_live_0ddbef13c9be38d3035e5f0425529fa1c0887d50';
 
+  console.log('Paystack Config:', { isTestMode, publicKey: publicKey.substring(0, 20) + '...' });
   return { publicKey, isTestMode };
 };
 
@@ -37,6 +40,14 @@ export const initializePayment = (amount, email, metadata = {}) => {
     },
     channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'], // All available channels
   };
+
+  console.log('Payment Config Created:', {
+    amount: config.amount,
+    email: config.email,
+    reference: config.reference,
+    publicKey: config.publicKey.substring(0, 20) + '...',
+    currency: config.currency
+  });
 
   return config;
 };
@@ -89,24 +100,24 @@ export const getTransactionDetails = async (transactionId, secretKey) => {
   }
 };
 
-// Get plan pricing in GHS
-export const getPlanPricing = () => {
+// Get plan pricing in user's detected currency
+export const getPlanPricing = (currency = null) => {
+  const targetCurrency = currency || currencyService.getCurrentCurrency();
+  
   return {
     free: {
       monthly: 0,
       yearly: 0
     },
     pro: {
-      monthly: 600,      // GHS 600/month
-      yearly: 6000,      // GHS 6000/year (2 months free)
-      monthly_usd: 49.99,
-      yearly_usd: 499.99
+      monthly: currencyService.getPlanPricing('pro', 'monthly', targetCurrency).amount,
+      yearly: currencyService.getPlanPricing('pro', 'yearly', targetCurrency).amount,
+      currency: targetCurrency
     },
     enterprise: {
-      monthly: 1800,     // GHS 1800/month
-      yearly: 18000,     // GHS 18000/year (2 months free)
-      monthly_usd: 149.99,
-      yearly_usd: 1499.99
+      monthly: currencyService.getPlanPricing('enterprise', 'monthly', targetCurrency).amount,
+      yearly: currencyService.getPlanPricing('enterprise', 'yearly', targetCurrency).amount,
+      currency: targetCurrency
     }
   };
 };

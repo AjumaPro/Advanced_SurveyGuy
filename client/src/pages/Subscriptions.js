@@ -128,6 +128,22 @@ const Subscriptions = () => {
     detectUserLocation();
   }, [CURRENCIES]);
 
+  // Redirect free plan users to payment page
+  useEffect(() => {
+    if (user && userProfile && currentPlan === 'free') {
+      // Show a toast message and redirect to payment page
+      toast('Upgrade to a paid plan to access subscription management! 💳', {
+        duration: 3000,
+        icon: '💳',
+      });
+      
+      // Redirect to payment page after a short delay
+      setTimeout(() => {
+        window.location.href = '/app/billing';
+      }, 2000);
+    }
+  }, [user, userProfile, currentPlan]);
+
   // Base plans with GHS pricing (Premium removed, remaining upgraded)
   const basePlans = [
     {
@@ -165,7 +181,7 @@ const Subscriptions = () => {
     {
       id: 'pro',
       name: 'Pro',
-      monthlyPrice: 49.99, // Upgraded price with more features
+      monthlyPrice: 20.00, // Updated price
       yearlyPrice: 499.99, // 10 months price (2 months free)
       icon: <Zap className="w-8 h-8" />,
       color: 'from-blue-500 to-purple-600',
@@ -198,7 +214,7 @@ const Subscriptions = () => {
     {
       id: 'enterprise',
       name: 'Enterprise',
-      monthlyPrice: 149.99, // Upgraded price with premium features
+      monthlyPrice: 99.99, // Updated price
       yearlyPrice: 1499.99, // 10 months price (2 months free)
       icon: <Crown className="w-8 h-8" />,
       color: 'from-yellow-400 to-orange-600',
@@ -364,6 +380,19 @@ const Subscriptions = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show loading state for free plan users being redirected
+  if (user && userProfile && currentPlan === 'free') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Redirecting to Payment Page</h2>
+          <p className="text-gray-600">Please wait while we redirect you to upgrade your plan...</p>
+        </div>
       </div>
     );
   }

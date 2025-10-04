@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { usePlanLimitations } from '../utils/planLimitations';
 import { supabase } from '../lib/supabase';
 import FreePlanDashboard from './FreePlanDashboard';
 import ProPlanDashboard from './ProPlanDashboard';
 import EnterprisePlanDashboard from './EnterprisePlanDashboard';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Lock } from 'lucide-react';
 
 const PlanBasedDashboard = () => {
   const { user, userProfile } = useAuth();
   const { currentPlan, isFreePlan, isProPlan, isEnterprisePlan } = useFeatureAccess();
+  const { limits, isFree, plan } = usePlanLimitations();
   
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
@@ -106,12 +108,24 @@ const PlanBasedDashboard = () => {
     );
   }
 
+  // Calculate survey statistics
+  const surveyStats = {
+    total: data.surveys.length,
+    published: data.surveys.filter(s => s.status === 'published').length,
+    draft: data.surveys.filter(s => s.status === 'draft').length,
+    canCreateMore: limits.maxSurveys === -1 || data.surveys.length < limits.maxSurveys,
+    maxAllowed: limits.maxSurveys
+  };
+
   // Route to appropriate dashboard based on plan
   if (isFreePlan()) {
     return (
       <FreePlanDashboard 
         surveys={data.surveys}
         responses={data.responses}
+        surveyStats={surveyStats}
+        limits={limits}
+        plan={plan}
       />
     );
   }
@@ -122,6 +136,9 @@ const PlanBasedDashboard = () => {
         surveys={data.surveys}
         responses={data.responses}
         teamMembers={data.teamMembers}
+        surveyStats={surveyStats}
+        limits={limits}
+        plan={plan}
       />
     );
   }

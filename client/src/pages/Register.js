@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
+import { 
+  CheckCircle, 
+  Star, 
+  Zap, 
+  Crown, 
+  ArrowRight,
+  Lock,
+  Users,
+  BarChart3,
+  Shield
+} from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +25,8 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState('free'); // 'free' or 'pro'
+  const [currentStep, setCurrentStep] = useState('plan'); // 'plan' or 'details'
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -61,11 +75,18 @@ const Register = () => {
 
     try {
       console.log('🔐 Attempting registration...');
-      const result = await register(formData.email, formData.password, formData.name);
+      const result = await register(formData.email, formData.password, formData.name, selectedPlan);
       
       if (result.success) {
         console.log('✅ Registration successful, redirecting...');
-        navigate('/app/dashboard');
+        
+        if (selectedPlan === 'pro') {
+          // Redirect to payment flow for Pro plan
+          navigate('/app/subscriptions');
+        } else {
+          // Redirect to dashboard for Free plan
+          navigate('/app/dashboard');
+        }
       } else {
         console.log('❌ Registration failed:', result.error);
         setError(result.error);
@@ -75,6 +96,57 @@ const Register = () => {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePlanSelect = (plan) => {
+    setSelectedPlan(plan);
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === 'plan') {
+      setCurrentStep('details');
+    }
+  };
+
+  const handleBackStep = () => {
+    if (currentStep === 'details') {
+      setCurrentStep('plan');
+    }
+  };
+
+  const planFeatures = {
+    free: {
+      name: 'Free Plan',
+      icon: Star,
+      price: '₵0',
+      description: 'Perfect for getting started',
+      features: [
+        'Up to 5 surveys',
+        'Basic analytics',
+        'Email support',
+        'Standard templates'
+      ],
+      limitations: [
+        'Cannot edit published surveys',
+        'Cannot delete published surveys',
+        'Limited to 5 surveys total'
+      ]
+    },
+    pro: {
+      name: 'Pro Plan',
+      icon: Zap,
+      price: '₵20.00/month',
+      description: 'For growing businesses',
+      features: [
+        'Unlimited surveys',
+        'Advanced analytics',
+        'Priority support',
+        'All templates',
+        'Export capabilities',
+        'Team collaboration'
+      ],
+      popular: true
     }
   };
 

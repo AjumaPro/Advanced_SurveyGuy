@@ -17,7 +17,7 @@ import {
   Lock,
   Users
 } from 'lucide-react';
-import QRCodeShare from '../components/QRCodeShare';
+import ProductionQRCodeSystem from '../components/ProductionQRCodeSystem';
 
 const PublishSurvey = () => {
   const { id } = useParams();
@@ -442,9 +442,10 @@ const PublishSurvey = () => {
 
       {/* QR Code Modal */}
       {showQRCode && (
-        <QRCodeShare
-          surveyUrl={getPublicUrl()}
+        <ProductionQRCodeSystem
+          surveyId={survey.id}
           surveyTitle={survey.title}
+          surveyUrl={getPublicUrl()}
           onClose={() => setShowQRCode(false)}
         />
       )}

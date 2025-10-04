@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Calendar, Clock, MapPin, Users, Mail, Phone, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Mail, Phone, User, CreditCard, QrCode } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { usePaystackPayment } from 'react-paystack';
+import { initializePayment } from '../services/paystackService';
 
 const EventRegistrationForm = ({ event, onSuccess, onCancel }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [registrationData, setRegistrationData] = useState(null);
   
   const {
     register,
@@ -29,10 +33,24 @@ const EventRegistrationForm = ({ event, onSuccess, onCancel }) => {
 
   const attendeesCount = watch('attendees');
 
+  // Event pricing (if event has pricing)
+  const eventPrice = event?.price || 0;
+  const totalPrice = eventPrice * attendeesCount;
+
+  // Paystack configuration
+  const paystackConfig = initializePayment(totalPrice, user?.email || '', {
+    event_id: event?.id,
+    registration_data: registrationData,
+    user_id: user?.id,
+    channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer']
+  });
+
+  const initializePaystack = usePaystackPayment(paystackConfig);
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const registrationData = {
+      const formData = {
         user_id: user?.id,
         name: data.name.trim(),
         email: data.email.trim(),
@@ -48,24 +66,64 @@ const EventRegistrationForm = ({ event, onSuccess, onCancel }) => {
         }
       };
 
-      console.log('📝 Submitting registration:', registrationData);
+      setRegistrationData(formData);
 
-      const response = await api.events.registerForEvent(event.id, registrationData);
-      
-      if (response.error) {
-        console.error('❌ Registration failed:', response.error);
-        toast.error(`Registration failed: ${response.error}`);
-      } else {
-        console.log('✅ Registration successful:', response.registration);
-        toast.success('Registration successful! You will receive a confirmation email shortly.');
-        if (onSuccess) onSuccess(response.registration);
+      // If event has a price, show payment flow
+      if (eventPrice > 0) {
+        setShowPayment(true);
+        setIsSubmitting(false);
+        return;
       }
+
+      // If free event, proceed with registration
+      await processRegistration(formData);
     } catch (error) {
-      console.error('💥 Registration error:', error);
-      toast.error(`Registration failed: ${error.message}`);
-    } finally {
+      console.error('Error in form submission:', error);
+      toast.error('Failed to process registration');
       setIsSubmitting(false);
     }
+  };
+
+  const processRegistration = async (data) => {
+    try {
+      const { data: registration, error } = await api.events.registerForEvent(event.id, data);
+      
+      if (error) throw error;
+      
+      toast.success('Registration successful!');
+      onSuccess?.(registration);
+    } catch (error) {
+      console.error('Error registering for event:', error);
+      toast.error('Failed to register for event');
+      throw error;
+    }
+  };
+
+  const handlePaymentSuccess = async (reference) => {
+    try {
+      // Verify payment with backend
+      const { data: verification, error } = await api.payments.verifyPayment(reference);
+      
+      if (error) throw error;
+      
+      // Process registration with payment confirmation
+      await processRegistration({
+        ...registrationData,
+        payment_reference: reference,
+        payment_verified: true
+      });
+      
+      setShowPayment(false);
+      toast.success('Payment successful! Registration completed.');
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Payment verification failed');
+    }
+  };
+
+  const handlePaymentClose = () => {
+    setShowPayment(false);
+    setIsSubmitting(false);
   };
 
   if (!event) {
@@ -264,6 +322,59 @@ const EventRegistrationForm = ({ event, onSuccess, onCancel }) => {
           </div>
         )}
 
+        {/* Payment Information */}
+        {eventPrice > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800">
+                    Event Fee: GH¢{eventPrice.toFixed(2)} per person
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    Total: GH¢{totalPrice.toFixed(2)} for {attendeesCount} attendee{attendeesCount > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <QrCode className="w-4 h-4 text-blue-600" />
+                <span className="text-xs text-blue-600">QR Payment Available</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Flow */}
+        {showPayment && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="text-center">
+              <CreditCard className="w-12 h-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-green-800 mb-2">
+                Complete Your Payment
+              </h3>
+              <p className="text-green-700 mb-4">
+                Total Amount: GH¢{totalPrice.toFixed(2)}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => initializePaystack(handlePaymentSuccess, handlePaymentClose)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Pay with Paystack
+                </button>
+                <button
+                  onClick={handlePaymentClose}
+                  className="px-6 py-3 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors"
+                >
+                  Cancel Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Form Actions */}
         <div className="flex items-center justify-end space-x-3 pt-6 border-t">
           {onCancel && (
@@ -288,8 +399,17 @@ const EventRegistrationForm = ({ event, onSuccess, onCancel }) => {
               </>
             ) : (
               <>
-                <Mail className="w-4 h-4" />
-                Register for Event
+                {eventPrice > 0 ? (
+                  <>
+                    <CreditCard className="w-4 h-4" />
+                    Register & Pay
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    Register for Event
+                  </>
+                )}
               </>
             )}
           </button>

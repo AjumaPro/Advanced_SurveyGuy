@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 // import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlanLimitations, canCreateSurvey } from '../utils/planLimitations';
 import api from '../services/api';
 import { getQuestionType, getDefaultQuestionSettings } from '../utils/questionTypes';
 import toast from 'react-hot-toast';
@@ -413,6 +414,7 @@ const ProfessionalSurveyBuilder = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
+  const { limits, isFree, plan } = usePlanLimitations();
   
   // Survey state
   const [survey, setSurvey] = useState({
@@ -483,6 +485,25 @@ const ProfessionalSurveyBuilder = () => {
 
   const loadSurvey = React.useCallback(async () => {
     if (!id || id === 'new') {
+      // Check if user can create more surveys
+      if (isFree && limits.maxSurveys !== -1) {
+        try {
+          const { data: userSurveys, error } = await supabase
+            .from('surveys')
+            .select('id')
+            .eq('user_id', user?.id);
+
+          if (error) {
+            console.error('Error checking survey count:', error);
+          } else if (userSurveys && userSurveys.length >= limits.maxSurveys) {
+            toast.error(`You've reached the limit of ${limits.maxSurveys} surveys on the Free plan. Upgrade to Pro for unlimited surveys.`);
+            navigate('/app/subscriptions');
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking survey count:', error);
+        }
+      }
       setLoading(false);
       return;
     }
@@ -606,8 +627,13 @@ const ProfessionalSurveyBuilder = () => {
 
   // Unpublish survey (back to draft)
   const unpublishSurvey = React.useCallback(async () => {
+    // Check if free user can unpublish
+    if (isFree && !limits.canEditPublished) {
+      toast.error('Free users cannot unpublish surveys. Upgrade to Pro to edit published surveys.');
+      return;
+    }
     await saveSurvey(false, 'draft');
-  }, [saveSurvey]);
+  }, [saveSurvey, isFree, limits]);
 
   useEffect(() => {
     loadSurvey();
@@ -650,6 +676,12 @@ const ProfessionalSurveyBuilder = () => {
   };
 
   const addQuestion = (questionOrType) => {
+    // Check if user can edit published surveys
+    if (survey.status === 'published' && isFree && !limits.canEditPublished) {
+      toast.error('Free users cannot edit published surveys. Upgrade to Pro to edit published surveys.');
+      return;
+    }
+
     let newQuestion;
     
     // Generate unique ID with timestamp and random component
@@ -889,6 +921,12 @@ const ProfessionalSurveyBuilder = () => {
   };
 
   const deleteQuestion = (questionId) => {
+    // Check if user can edit published surveys
+    if (survey.status === 'published' && isFree && !limits.canEditPublished) {
+      toast.error('Free users cannot edit published surveys. Upgrade to Pro to edit published surveys.');
+      return;
+    }
+
     console.log('Deleting question with ID:', questionId);
     console.log('Current survey questions before delete:', survey.questions);
     

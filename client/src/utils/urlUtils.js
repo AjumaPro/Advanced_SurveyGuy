@@ -7,11 +7,8 @@
  * @returns {string} The base URL for the current environment
  */
 export const getBaseUrl = () => {
-  // Check if we're in production
-  if (window.location.hostname === 'ajumapro.com') {
-    return 'https://ajumapro.com';
-  }
-  // For local development or other domains
+  // Always use the current origin for production compatibility
+  // This ensures QR codes work regardless of the deployment domain
   return window.location.origin;
 };
 

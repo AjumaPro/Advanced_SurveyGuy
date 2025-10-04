@@ -3,6 +3,7 @@ import { QRCodeCanvas as QRCode } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import SimpleEmbedTab from './SimpleEmbedTab';
+import ProductionQRCodeSystem from './ProductionQRCodeSystem';
 import { getSurveyUrl, getShortSurveyUrl } from '../utils/urlUtils';
 import {
   X,
@@ -46,11 +47,65 @@ const SurveyShareModal = ({ survey, isOpen, onClose }) => {
 
   const surveyUrl = getSurveyUrl(survey.id);
   const shortUrl = getShortSurveyUrl(survey.id);
+  
+  // Debug logging
+  console.log('🔍 SurveyShareModal Debug:');
+  console.log('Survey ID:', survey.id);
+  console.log('Survey URL:', surveyUrl);
+  console.log('Short URL:', shortUrl);
+  console.log('Base URL:', window.location.origin);
 
   const copyToClipboard = (text, message = 'Copied to clipboard!') => {
-    navigator.clipboard.writeText(text);
-    toast.success(message);
-    setCopied(true);
+    try {
+      if (!text) {
+        toast.error('No text to copy');
+        return;
+      }
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          toast.success(message);
+          setCopied(true);
+        }).catch((error) => {
+          console.error('Clipboard API error:', error);
+          fallbackCopy(text, message);
+        });
+      } else {
+        // Fallback for older browsers
+        fallbackCopy(text, message);
+      }
+    } catch (error) {
+      console.error('Copy error:', error);
+      fallbackCopy(text, message);
+    }
+  };
+
+  const fallbackCopy = (text, message) => {
+    try {
+      // Create a temporary textarea element
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        toast.success(message);
+        setCopied(true);
+      } else {
+        toast.error('Failed to copy. Please copy manually.');
+      }
+    } catch (error) {
+      console.error('Fallback copy error:', error);
+      toast.error('Failed to copy. Please copy manually.');
+    }
   };
 
   const downloadQRCode = () => {
@@ -147,57 +202,30 @@ const SurveyShareModal = ({ survey, isOpen, onClose }) => {
             {/* QR Code Tab */}
             {activeTab === 'qr' && (
               <div className="space-y-6">
-                <div className="text-center">
-                  <div className="inline-block p-6 bg-white border-2 border-gray-200 rounded-xl shadow-sm">
-                    <QRCode
-                      id="qr-code-canvas"
-                      value={surveyUrl}
-                      size={qrSize}
-                      level="M"
-                      includeMargin={true}
-                      renderAs="canvas"
-                    />
-                  </div>
-                  
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600 mb-3">
-                      Scan this QR code to access the survey instantly
-                    </p>
-                    
-                    <div className="flex items-center justify-center space-x-4">
-                      <label className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Size:</span>
-                        <select
-                          value={qrSize}
-                          onChange={(e) => setQrSize(Number(e.target.value))}
-                          className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value={150}>Small (150px)</option>
-                          <option value={200}>Medium (200px)</option>
-                          <option value={300}>Large (300px)</option>
-                          <option value={400}>Extra Large (400px)</option>
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button
-                    onClick={downloadQRCode}
-                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download QR Code</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => copyToClipboard(surveyUrl, 'Survey URL copied!')}
-                    className="flex items-center justify-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Copy className="w-4 h-4" />
-                    <span>Copy Survey URL</span>
-                  </button>
+                <ProductionQRCodeSystem
+                  surveyId={survey.id}
+                  surveyTitle={survey.title}
+                  surveyUrl={surveyUrl}
+                  size={qrSize}
+                  onDownload={(filename) => toast.success(`QR code downloaded: ${filename}`)}
+                  onCopy={() => copyToClipboard(surveyUrl, 'Survey URL copied!')}
+                  onError={(error) => console.error('QR Code error:', error)}
+                />
+                
+                <div className="flex items-center justify-center space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700">Size:</span>
+                    <select
+                      value={qrSize}
+                      onChange={(e) => setQrSize(Number(e.target.value))}
+                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={150}>Small (150px)</option>
+                      <option value={200}>Medium (200px)</option>
+                      <option value={300}>Large (300px)</option>
+                      <option value={400}>Extra Large (400px)</option>
+                    </select>
+                  </label>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

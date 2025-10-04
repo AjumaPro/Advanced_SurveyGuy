@@ -8,6 +8,7 @@ import {
   Edit,
   Trash2,
   Eye,
+  EyeOff,
   Lock,
   Unlock,
   Crown,
@@ -34,6 +35,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CouponManagementTab from './CouponManagementTab';
+import api from '../services/api';
 
 // User Management Tab Component
 export const UserManagementTab = ({
@@ -53,6 +55,11 @@ export const UserManagementTab = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [loadingPassword, setLoadingPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -111,7 +118,48 @@ export const UserManagementTab = ({
       plan: user.plan || 'free',
       is_active: user.is_active
     });
+    setCurrentPassword(''); // Reset current password display
+    setShowCurrentPassword(false);
     setShowEditModal(true);
+  };
+
+  const handlePasswordReset = async () => {
+    if (!selectedUser || !formData.password) {
+      toast.error('Please enter a new password');
+      return;
+    }
+
+    setLoadingPassword(true);
+    try {
+      const response = await api.admin.resetUserPassword(selectedUser.id, formData.password);
+      
+      if (response.error) {
+        toast.error(`Failed to reset password: ${response.error}`);
+      } else {
+        toast.success('Password reset successfully!');
+        setFormData({...formData, password: ''}); // Clear password field
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error('Failed to reset password');
+    } finally {
+      setLoadingPassword(false);
+    }
+  };
+
+  const handleQuickPasswordReset = async (userId, newPassword) => {
+    try {
+      const response = await api.admin.resetUserPassword(userId, newPassword);
+      
+      if (response.error) {
+        toast.error(`Failed to reset password: ${response.error}`);
+      } else {
+        toast.success('Password reset successfully!');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error('Failed to reset password');
+    }
   };
 
   const getRoleBadge = (role) => {
@@ -290,6 +338,21 @@ export const UserManagementTab = ({
                         </button>
                         
                         <button
+                          onClick={() => {
+                            const newPassword = prompt(`Reset password for ${user.email}:\n\nEnter new password:`);
+                            if (newPassword && newPassword.length >= 6) {
+                              handleQuickPasswordReset(user.id, newPassword);
+                            } else if (newPassword) {
+                              toast.error('Password must be at least 6 characters long');
+                            }
+                          }}
+                          className="text-orange-600 hover:text-orange-900"
+                          title="Reset Password"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                        
+                        <button
                           onClick={() => onToggleStatus(user.id, !user.is_active)}
                           className={user.is_active ? "text-red-600 hover:text-red-900" : "text-green-600 hover:text-green-900"}
                           title={user.is_active ? "Deactivate" : "Activate"}
@@ -344,13 +407,22 @@ export const UserManagementTab = ({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Password *</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Role</label>
@@ -427,14 +499,72 @@ export const UserManagementTab = ({
                     required
                   />
                 </div>
+                {/* Current Password Display */}
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Current Password</label>
+                    <span className="text-xs text-gray-500 bg-yellow-100 px-2 py-1 rounded">
+                      🔒 Encrypted (Cannot be retrieved)
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 bg-white p-2 rounded border">
+                    <div className="flex items-center">
+                      <Lock className="w-4 h-4 mr-2 text-gray-400" />
+                      <span className="font-mono">••••••••••••</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Passwords are encrypted for security. Use the form below to set a new password.
+                    </p>
+                  </div>
+                </div>
+
+                {/* New Password Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">New Password (leave blank to keep current)</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Set New Password
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="Enter new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showEditPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={handlePasswordReset}
+                      disabled={!formData.password || loadingPassword}
+                      className={`w-full px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        !formData.password || loadingPassword
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                    >
+                      {loadingPassword ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Resetting Password...
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <Key className="w-4 h-4 mr-2" />
+                          Reset Password Now
+                        </div>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Role</label>
