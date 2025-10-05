@@ -20,7 +20,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import TeamCreationModal from '../components/TeamManagement/TeamCreationModal';
 import TeamDashboard from '../components/TeamManagement/TeamDashboard';

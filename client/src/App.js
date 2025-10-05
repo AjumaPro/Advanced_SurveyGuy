@@ -6,6 +6,7 @@ import ProfessionalLayout from './components/ProfessionalLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 import PlanProtectedRoute from './components/PlanProtectedRoute';
 import { AdminOnly } from './utils/adminUtils';
+import DashboardRedirect from './components/DashboardRedirect';
 
 // Core components that should load immediately
 import Landing from './pages/Landing';
@@ -45,6 +46,8 @@ const QRMessages = React.lazy(() => import('./pages/QRMessages'));
 const QRMessageReveal = React.lazy(() => import('./pages/QRMessageReveal'));
 const Forms = React.lazy(() => import('./pages/Forms'));
 const FormViewer = React.lazy(() => import('./pages/FormViewer'));
+const Blog = React.lazy(() => import('./pages/Blog'));
+const BlogPost = React.lazy(() => import('./pages/BlogPost'));
 
 // Admin components - keep as lazy loaded but reduce total count
 const AdminLogin = React.lazy(() => import('./pages/AdminLogin'));
@@ -120,14 +123,18 @@ function AppRoutes() {
       {/* Survey Response Route (Public) - Lazy load */}
       <Route path="/survey/:id" element={
         <LazyRoute>
-          <SurveyResponse />
+          <DashboardRedirect>
+            <SurveyResponse />
+          </DashboardRedirect>
         </LazyRoute>
       } />
       
       {/* Short URL redirect */}
       <Route path="/s/:id" element={
         <LazyRoute>
-          <SurveyResponse />
+          <DashboardRedirect>
+            <SurveyResponse />
+          </DashboardRedirect>
         </LazyRoute>
       } />
       
@@ -145,6 +152,16 @@ function AppRoutes() {
       <Route path="/contact" element={
         <LazyRoute>
           <Contact />
+        </LazyRoute>
+      } />
+      <Route path="/blog" element={
+        <LazyRoute>
+          <Blog />
+        </LazyRoute>
+      } />
+      <Route path="/blog/:slug" element={
+        <LazyRoute>
+          <BlogPost />
         </LazyRoute>
       } />
       
@@ -374,7 +391,9 @@ function AppRoutes() {
         } />
         <Route path="/form/:formId" element={
           <LazyRoute>
-            <FormViewer />
+            <DashboardRedirect>
+              <FormViewer />
+            </DashboardRedirect>
           </LazyRoute>
         } />
       

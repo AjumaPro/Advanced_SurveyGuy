@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 const EventPaymentSystem = ({ eventId }) => {
   const [paymentData, setPaymentData] = useState({
@@ -36,119 +37,57 @@ const EventPaymentSystem = ({ eventId }) => {
   const fetchPaymentData = async () => {
     setLoading(true);
     try {
-      // Mock payment data - replace with actual API calls
-      const mockData = {
-        transactions: [
-          {
-            id: 'txn_001',
-            attendeeName: 'John Doe',
-            email: 'john@example.com',
-            amount: 299.99,
-            status: 'completed',
-            paymentMethod: 'credit_card',
-            transactionDate: '2024-01-10T14:30:00Z',
-            ticketType: 'VIP',
-            discountApplied: null
-          },
-          {
-            id: 'txn_002',
-            attendeeName: 'Jane Smith',
-            email: 'jane@example.com',
-            amount: 199.99,
-            status: 'completed',
-            paymentMethod: 'paypal',
-            transactionDate: '2024-01-09T16:45:00Z',
-            ticketType: 'Standard',
-            discountApplied: 'EARLY_BIRD_20'
-          },
-          {
-            id: 'txn_003',
-            attendeeName: 'Bob Johnson',
-            email: 'bob@example.com',
-            amount: 149.99,
-            status: 'pending',
-            paymentMethod: 'bank_transfer',
-            transactionDate: '2024-01-08T11:20:00Z',
-            ticketType: 'Student',
-            discountApplied: 'STUDENT_50'
-          }
-        ],
+      // Fetch real payment data from database
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('event_payments')
+        .select(`
+          *,
+          event_registrations (
+            attendee_name,
+            email,
+            ticket_type
+          )
+        `)
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false });
+
+      if (transactionsError) {
+        console.error('Error fetching payment data:', transactionsError);
+        throw transactionsError;
+      }
+
+      // Calculate summary statistics
+      const totalRevenue = transactionsData?.reduce((sum, txn) => sum + (txn.amount || 0), 0) || 0;
+      const totalTransactions = transactionsData?.length || 0;
+      const averageTicketPrice = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+      const completedPayments = transactionsData?.filter(txn => txn.status === 'completed').length || 0;
+      const pendingPayments = transactionsData?.filter(txn => txn.status === 'pending').length || 0;
+      const failedPayments = transactionsData?.filter(txn => txn.status === 'failed').length || 0;
+
+      const paymentData = {
+        transactions: transactionsData?.map(txn => ({
+          id: txn.id,
+          attendeeName: txn.event_registrations?.attendee_name || 'Unknown',
+          email: txn.event_registrations?.email || 'Unknown',
+          amount: txn.amount,
+          status: txn.status,
+          paymentMethod: txn.payment_method,
+          transactionDate: txn.created_at,
+          ticketType: txn.event_registrations?.ticket_type || 'Standard',
+          discountApplied: txn.discount_code || null
+        })) || [],
         revenue: {
-          totalRevenue: 125000,
-          netRevenue: 118750,
-          processingFees: 3750,
-          refunds: 2500,
-          pendingAmount: 5400,
-          averageTicketPrice: 225,
-          conversionRate: 15.8
-        },
-        pricing: {
-          ticketTiers: [
-            {
-              id: 'early_bird',
-              name: 'Early Bird',
-              price: 199.99,
-              originalPrice: 249.99,
-              available: 50,
-              sold: 45,
-              validUntil: '2024-02-01T00:00:00Z'
-            },
-            {
-              id: 'standard',
-              name: 'Standard',
-              price: 249.99,
-              originalPrice: 249.99,
-              available: 200,
-              sold: 156,
-              validUntil: '2024-03-15T00:00:00Z'
-            },
-            {
-              id: 'vip',
-              name: 'VIP',
-              price: 399.99,
-              originalPrice: 399.99,
-              available: 50,
-              sold: 32,
-              validUntil: '2024-03-15T00:00:00Z'
-            }
-          ]
-        },
-        discounts: [
-          {
-            id: 'early_bird_20',
-            code: 'EARLY_BIRD_20',
-            type: 'percentage',
-            value: 20,
-            usageLimit: 100,
-            usedCount: 45,
-            validUntil: '2024-02-01T00:00:00Z',
-            status: 'active'
-          },
-          {
-            id: 'student_50',
-            code: 'STUDENT_50',
-            type: 'percentage',
-            value: 50,
-            usageLimit: 25,
-            usedCount: 18,
-            validUntil: '2024-03-15T00:00:00Z',
-            status: 'active'
-          }
-        ],
-        refunds: [
-          {
-            id: 'ref_001',
-            transactionId: 'txn_004',
-            amount: 249.99,
-            reason: 'Event cancellation',
-            status: 'processed',
-            requestDate: '2024-01-05T10:00:00Z',
-            processedDate: '2024-01-06T14:30:00Z'
-          }
-        ]
+          totalRevenue,
+          netRevenue: totalRevenue * 0.95, // Assuming 5% processing fees
+          processingFees: totalRevenue * 0.05,
+          refunds: 0, // Would need separate refunds table
+          pendingAmount: transactionsData?.filter(txn => txn.status === 'pending').reduce((sum, txn) => sum + (txn.amount || 0), 0) || 0,
+          averageTicketPrice,
+          conversionRate: totalTransactions > 0 ? (completedPayments / totalTransactions) * 100 : 0
+        }
       };
 
-      setPaymentData(mockData);
+      setPaymentData(paymentData);
     } catch (error) {
       console.error('Error fetching payment data:', error);
       toast.error('Failed to load payment data');

@@ -857,15 +857,51 @@ export const analyticsAPI = {
       const totalQuestions = surveys?.reduce((sum, survey) => 
         sum + (survey.questions?.length || 0), 0) || 0;
 
-      // Calculate average completion rate
-      const averageCompletionRate = responseCount > 0 ? 
-        Math.floor(Math.random() * 30) + 70 : 0;
+      // Calculate real completion rate from survey responses
+      let averageCompletionRate = 0;
+      let bounceRate = 0;
+      let averageTimeSpent = 0;
+
+      if (userSurveys && userSurveys.length > 0) {
+        const surveyIds = userSurveys.map(s => s.id);
+        
+        // Get all responses for completion rate calculation
+        const { data: allResponses } = await supabase
+          .from('survey_responses')
+          .select('id, completed_at, created_at, survey_id')
+          .in('survey_id', surveyIds);
+
+        if (allResponses && allResponses.length > 0) {
+          // Calculate completion rate (responses with completed_at)
+          const completedResponses = allResponses.filter(r => r.completed_at).length;
+          averageCompletionRate = completedResponses / allResponses.length;
+          
+          // Calculate bounce rate (responses without completed_at)
+          bounceRate = (allResponses.length - completedResponses) / allResponses.length;
+          
+          // Calculate average time spent from responses
+          const timeSpentValues = allResponses
+            .filter(r => r.completed_at && r.created_at)
+            .map(r => {
+              const start = new Date(r.created_at);
+              const end = new Date(r.completed_at);
+              return (end - start) / (1000 * 60); // Convert to minutes
+            })
+            .filter(time => time > 0 && time < 1440); // Filter out invalid times (0-24 hours)
+
+          if (timeSpentValues.length > 0) {
+            averageTimeSpent = timeSpentValues.reduce((sum, time) => sum + time, 0) / timeSpentValues.length;
+          }
+        }
+      }
 
       return {
         totalSurveys: surveyCount || 0,
         totalResponses: responseCount,
         totalQuestions,
         averageCompletionRate,
+        averageTimeSpent,
+        bounceRate,
         error: null
       };
     } catch (error) {
@@ -875,6 +911,8 @@ export const analyticsAPI = {
         totalResponses: 0,
         totalQuestions: 0,
         averageCompletionRate: 0,
+        averageTimeSpent: 0,
+        bounceRate: 0,
         error: error.message
       };
     }
@@ -974,7 +1012,7 @@ export const analyticsAPI = {
         overview = {
           totalResponses,
           completionRate: Math.round(completionRate * 10) / 10,
-          averageTimeToComplete: Math.random() * 10 + 2,
+          averageTimeToComplete: overview?.averageTimeSpent || 0,
           totalQuestions: survey?.questions?.length || 0,
           activeResponses: Math.floor(totalResponses * 0.1)
         };
@@ -1125,7 +1163,7 @@ export const analyticsAPI = {
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         responses: Math.floor(Math.random() * 50) + 10,
         surveys: Math.floor(Math.random() * 5) + 1,
-        completionRate: Math.floor(Math.random() * 30) + 70
+        completionRate: 75 // Default completion rate when no real data
       });
     }
     
@@ -1146,7 +1184,7 @@ export const analyticsAPI = {
       date.setDate(date.getDate() - i);
       trends.dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
       trends.responses.push(Math.floor(Math.random() * 20) + 5);
-      trends.completionRates.push(Math.floor(Math.random() * 30) + 70);
+      trends.completionRates.push(75); // Default completion rate when no real data
     }
     
     return trends;

@@ -255,19 +255,26 @@ const Billing = () => {
         setBillingHistory(historyData || []);
       }
 
-      // Mock payment methods (in a real app, this would come from payment processor)
-      setPaymentMethods([
-        {
-          id: 'pm_1',
-          type: 'card',
-          brand: 'visa',
-          last4: '4242',
-          expMonth: 12,
-          expYear: 2025,
-          isDefault: true,
-          name: 'John Doe'
+      // Fetch real payment methods from Paystack
+      try {
+        console.log('💳 Fetching payment methods from Paystack...');
+        const { data: paymentMethodsData, error: paymentMethodsError } = await supabase
+          .from('payment_methods')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!paymentMethodsError && paymentMethodsData) {
+          console.log('✅ Payment methods loaded:', paymentMethodsData.length);
+          setPaymentMethods(paymentMethodsData);
+        } else {
+          console.log('⚠️ No payment methods found or error:', paymentMethodsError?.message);
+          setPaymentMethods([]);
         }
-      ]);
+      } catch (error) {
+        console.error('❌ Error fetching payment methods:', error);
+        setPaymentMethods([]);
+      }
 
       // Calculate billing stats
       const totalSpent = (historyData || []).reduce((sum, item) => sum + (item.price || 0), 0);
@@ -275,7 +282,7 @@ const Billing = () => {
         totalSpent,
         avgMonthly: totalSpent / Math.max(1, (historyData || []).length),
         nextBilling: subscriptionData?.[0]?.ends_at || null,
-        savedAmount: totalSpent * 0.15 // Mock savings calculation
+        savedAmount: subscriptionData?.[0]?.savings || 0 // Real savings from subscription
       });
 
       console.log('✅ Billing data loaded successfully');

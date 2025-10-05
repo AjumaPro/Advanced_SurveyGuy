@@ -19,11 +19,14 @@ import {
   Lock
 } from 'lucide-react';
 import api from '../services/api';
+import { supabase } from '../lib/supabase';
+import { useDashboardNavigation } from '../utils/navigationUtils';
 import QRCode from 'qrcode';
 
 const FormViewer = () => {
   const { formId } = useParams();
   const navigate = useNavigate();
+  const { navigateToDashboard, isSignedIn } = useDashboardNavigation();
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -71,60 +74,86 @@ const FormViewer = () => {
   const fetchForm = async () => {
     try {
       setLoading(true);
-      // Load form from localStorage (for demo purposes)
-      // In production, this would be an API call
+      
+      // First, try to load from localStorage (for demo purposes)
       const savedForms = JSON.parse(localStorage.getItem('savedForms') || '[]');
       const foundForm = savedForms.find(f => f.id === formId);
       
       if (foundForm) {
+        console.log('📋 Form found in localStorage:', foundForm);
         setForm(foundForm);
         await generateQRCode();
-      } else {
-        // Fallback to mock data if form not found
-        const mockForm = {
-          id: formId,
-          title: 'Contact Us Form',
-          description: 'Get in touch with us using this form',
-          fields: [
-            {
-              id: 'name',
-              type: 'text',
-              label: 'Full Name',
-              required: true,
-              placeholder: 'Enter your full name'
-            },
-            {
-              id: 'email',
-              type: 'email',
-              label: 'Email Address',
-              required: true,
-              placeholder: 'Enter your email address'
-            },
-            {
-              id: 'phone',
-              type: 'phone',
-              label: 'Phone Number',
-              required: false,
-              placeholder: 'Enter your phone number'
-            },
-            {
-              id: 'message',
-              type: 'textarea',
-              label: 'Message',
-              required: true,
-              placeholder: 'Enter your message'
-            }
-          ],
-          settings: {
-            isPublic: true,
-            allowMultipleSubmissions: false,
-            requireLogin: false
-          }
-        };
-        
-        setForm(mockForm);
-        await generateQRCode();
+        return;
       }
+
+      // Try to fetch from database/API
+      try {
+        console.log('🔍 Attempting to fetch form from database...');
+        const { data: dbForm, error: dbError } = await supabase
+          .from('forms')
+          .select('*')
+          .eq('id', formId)
+          .eq('is_public', true)
+          .single();
+
+        if (!dbError && dbForm) {
+          console.log('✅ Form found in database:', dbForm);
+          setForm(dbForm);
+          await generateQRCode();
+          return;
+        } else {
+          console.log('❌ Form not found in database:', dbError?.message);
+        }
+      } catch (apiError) {
+        console.log('⚠️ Database fetch failed:', apiError);
+      }
+
+      // Fallback to mock data if form not found
+      console.log('🔄 Using fallback mock form...');
+      const mockForm = {
+        id: formId,
+        title: 'Contact Us Form',
+        description: 'Get in touch with us using this form',
+        fields: [
+          {
+            id: 'name',
+            type: 'text',
+            label: 'Full Name',
+            required: true,
+            placeholder: 'Enter your full name'
+          },
+          {
+            id: 'email',
+            type: 'email',
+            label: 'Email Address',
+            required: true,
+            placeholder: 'Enter your email address'
+          },
+          {
+            id: 'phone',
+            type: 'phone',
+            label: 'Phone Number',
+            required: false,
+            placeholder: 'Enter your phone number'
+          },
+          {
+            id: 'message',
+            type: 'textarea',
+            label: 'Message',
+            required: true,
+            placeholder: 'Enter your message'
+          }
+        ],
+        settings: {
+          isPublic: true,
+          allowMultipleSubmissions: false,
+          requireLogin: false
+        }
+      };
+      
+      setForm(mockForm);
+      await generateQRCode();
+      
     } catch (error) {
       console.error('Error fetching form:', error);
       setError('Form not found or access denied');
@@ -489,10 +518,10 @@ const FormViewer = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Form Not Found</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={navigateToDashboard}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Go Home
+            {isSignedIn ? 'Go to Dashboard' : 'Go Home'}
           </button>
         </div>
       </div>
@@ -513,10 +542,10 @@ const FormViewer = () => {
             Thank you for your submission. We'll get back to you soon.
           </p>
           <button
-            onClick={() => navigate('/')}
+            onClick={navigateToDashboard}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Go Home
+            {isSignedIn ? 'Go to Dashboard' : 'Go Home'}
           </button>
         </motion.div>
       </div>
@@ -531,8 +560,9 @@ const FormViewer = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/')}
+                onClick={navigateToDashboard}
                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                title={isSignedIn ? 'Back to Dashboard' : 'Back to Home'}
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>

@@ -4,6 +4,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import ReportExportModal from '../components/ReportExportModal';
+import {
+  exportPowerPoint,
+  exportExcel,
+  exportPDF,
+  exportImages,
+  exportSocialMedia,
+  validateExportConfig
+} from '../utils/simpleReportExport';
+import { ReportAI, enhanceReportWithAI } from '../utils/reportAI';
+import SocialMediaShare from '../components/SocialMediaShare';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -46,11 +57,10 @@ import {
   Plus,
   ChevronDown,
   Smartphone,
-  Monitor,
   Star,
   Activity,
   Timer,
-  Zap
+  Presentation
 } from 'lucide-react';
 
 // Register Chart.js components
@@ -84,6 +94,7 @@ const Reports = () => {
   const [lastRefresh, setLastRefresh] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [dataError, setDataError] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   
   // Chart references for PDF export
   const responseTrendsChartRef = React.useRef();
@@ -2232,6 +2243,79 @@ const Reports = () => {
     }
   };
 
+  // Export functions for the modal
+  const exportFunctions = {
+    exportPowerPoint: async (config) => {
+      console.log('exportPowerPoint called with config:', config);
+      try {
+        validateExportConfig(config);
+        await exportPowerPoint(config);
+        console.log('PowerPoint export completed successfully');
+      } catch (error) {
+        console.error('PowerPoint export error:', error);
+        throw error;
+      }
+    },
+    exportExcel: async (config) => {
+      console.log('exportExcel called with config:', config);
+      try {
+        validateExportConfig(config);
+        await exportExcel(config);
+        console.log('Excel export completed successfully');
+      } catch (error) {
+        console.error('Excel export error:', error);
+        throw error;
+      }
+    },
+    exportPDF: async (config) => {
+      console.log('exportPDF called with config:', config);
+      try {
+        validateExportConfig(config);
+        await exportPDF(config);
+        console.log('PDF export completed successfully');
+      } catch (error) {
+        console.error('PDF export error:', error);
+        throw error;
+      }
+    },
+    exportImages: async (config) => {
+      console.log('exportImages called with config:', config);
+      try {
+        validateExportConfig(config);
+        await exportImages(config);
+        console.log('Images export completed successfully');
+      } catch (error) {
+        console.error('Images export error:', error);
+        throw error;
+      }
+    },
+    exportSocialMedia: async (config) => {
+      console.log('exportSocialMedia called with config:', config);
+      try {
+        validateExportConfig(config);
+        await exportSocialMedia(config);
+        console.log('Social media export completed successfully');
+      } catch (error) {
+        console.error('Social media export error:', error);
+        throw error;
+      }
+    }
+  };
+
+  // Chart references object for export
+  const chartRefs = {
+    responseTrendsChartRef,
+    surveyPerformanceChartRef,
+    completionRateChartRef,
+    questionPerformanceChartRef,
+    ageDistributionChartRef,
+    geographicDistributionChartRef,
+    responseTimeChartRef,
+    deviceTypeChartRef,
+    satisfactionRatingChartRef,
+    monthlyTrendsChartRef
+  };
+
   const handleExportCharts = () => {
     try {
       const charts = [
@@ -2973,7 +3057,7 @@ const Reports = () => {
                     }
                   }} 
                 />
-              </div>
+        </div>
             </div>
           )}
 
@@ -3055,14 +3139,108 @@ const Reports = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Chart Export Options */}
+      {/* Professional AI-Enhanced Content Preview */}
+      <div className="mt-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-3xl border border-slate-200/50 shadow-2xl p-10 backdrop-blur-sm">
+        <div className="flex items-center gap-6 mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+            <svg className="w-8 h-8 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent">AI-Enhanced Professional Reports</h3>
+            <p className="text-slate-600 mt-2 text-lg">Executive-ready analytics with strategic insights and compelling narratives</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-slate-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-slate-900 text-xl">Executive Summary</h4>
+            </div>
+            <p className="text-slate-600 line-clamp-4 leading-relaxed text-base">
+              {analyticsData ? ReportAI.generateExecutiveSummary(analyticsData).content.substring(0, 250) + '...' : 'Loading AI-generated executive summary...'}
+            </p>
+          </div>
+          
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-slate-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-slate-900 text-xl">Strategic Insights</h4>
+            </div>
+            <p className="text-slate-600 line-clamp-4 leading-relaxed text-base">
+              {analyticsData ? ReportAI.generateInsightsAndRecommendations(analyticsData).content.substring(0, 250) + '...' : 'Loading AI-generated strategic insights...'}
+            </p>
+          </div>
+        </div>
+        
+        <div className="mt-8 flex items-center justify-between p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200/50">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+            <span className="text-slate-700 font-medium">AI content generation active</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <span className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Professional Formatting
+            </span>
+            <span className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Strategic Analysis
+            </span>
+            <span className="flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Executive Ready
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Social Media Sharing */}
+      {analyticsData && (
+        <SocialMediaShare 
+          analyticsData={analyticsData} 
+          chartRefs={chartRefs}
+          className="mt-8"
+        />
+      )}
+
+      {/* Chart Export Options - Full Width */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
               Charts are interactive - hover for details, click legend to toggle datasets
             </div>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="group relative flex items-center gap-3 px-8 py-4 text-sm font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 hover:scale-105 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <Presentation className="w-5 h-5 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
+            <span className="relative z-10">Export Professional Report</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+          </button>
               <button
                 onClick={() => {
                   handleExportCharts();
@@ -3075,7 +3253,16 @@ const Reports = () => {
             </div>
           </div>
         </div>
-      </div>
+
+      {/* Export Modal */}
+      <ReportExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        analyticsData={analyticsData}
+        filteredSurveys={filteredSurveys}
+        chartRefs={chartRefs}
+        exportFunctions={exportFunctions}
+      />
     </div>
   );
 
@@ -3102,7 +3289,7 @@ const Reports = () => {
   // Show loading or access denied
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header Skeleton */}
           <div className="mb-8">
@@ -3151,7 +3338,7 @@ const Reports = () => {
   // Show access denied for free users
   if (!hasAdvancedReports) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-gray-50 flex items-center justify-center py-20">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
             <BarChart3 className="w-10 h-10" />
@@ -3196,7 +3383,7 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

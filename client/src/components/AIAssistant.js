@@ -7,8 +7,11 @@ import {
   Wand2,
   MessageSquare,
   Send,
-  Loader2
+  Loader2,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
+import { AIService } from '../services/aiService';
 import toast from 'react-hot-toast';
 
 const AIAssistant = ({ survey, onAddQuestion, onClose }) => {
@@ -16,6 +19,8 @@ const AIAssistant = ({ survey, onAddQuestion, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [activeTab, setActiveTab] = useState('generate');
+  const [optimizationResults, setOptimizationResults] = useState(null);
+  const [optimizationLoading, setOptimizationLoading] = useState(false);
 
   const quickPrompts = [
     {
@@ -66,16 +71,30 @@ const AIAssistant = ({ survey, onAddQuestion, onClose }) => {
     
     setLoading(true);
     try {
-      // Simulate AI generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Use real AI service for question generation
+      const result = await AIService.generateQuestions(input, {
+        surveyType: 'general',
+        targetAudience: 'general',
+        questionCount: 4,
+        complexity: 'medium'
+      });
+
+      if (result.success) {
+        setSuggestions(result.questions);
+        toast.success(`Generated ${result.questions.length} AI-powered questions!`);
+      } else {
+        // Use fallback questions
+        const fallbackQuestions = generateMockQuestions(input);
+        setSuggestions(fallbackQuestions);
+        toast.warning('Using fallback questions - AI service unavailable');
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error('Failed to generate questions');
       
-      // Mock AI-generated questions based on input
+      // Use mock questions as fallback
       const mockQuestions = generateMockQuestions(input);
       setSuggestions(mockQuestions);
-      
-      toast.success(`Generated ${mockQuestions.length} question suggestions!`);
-    } catch (error) {
-      toast.error('Failed to generate questions');
     } finally {
       setLoading(false);
     }
@@ -111,6 +130,34 @@ const AIAssistant = ({ survey, onAddQuestion, onClose }) => {
   const addQuestionFromSuggestion = (suggestion) => {
     onAddQuestion(suggestion.type);
     toast.success('Question added to your survey!');
+  };
+
+  const handleOptimizeSurvey = async () => {
+    setOptimizationLoading(true);
+    try {
+      // Get mock response data for optimization
+      const mockResponses = Array.from({ length: 10 }, (_, i) => ({
+        id: i,
+        answers: survey.questions.reduce((acc, q) => {
+          acc[q.id] = `Sample response ${i + 1}`;
+          return acc;
+        }, {})
+      }));
+
+      const result = await AIService.optimizeSurvey(survey, mockResponses);
+      
+      if (result.success) {
+        setOptimizationResults(result.optimization);
+        toast.success('Survey optimization analysis complete!');
+      } else {
+        toast.error('Optimization analysis failed');
+      }
+    } catch (error) {
+      console.error('Optimization error:', error);
+      toast.error('Failed to optimize survey');
+    } finally {
+      setOptimizationLoading(false);
+    }
   };
 
   return (
@@ -266,8 +313,28 @@ const AIAssistant = ({ survey, onAddQuestion, onClose }) => {
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  Survey Analysis & Suggestions
+                  AI Survey Analysis & Optimization
                 </h3>
+                
+                {/* AI Optimization Button */}
+                <div className="mb-6">
+                  <button
+                    onClick={handleOptimizeSurvey}
+                    disabled={optimizationLoading}
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {optimizationLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Brain className="w-5 h-5" />
+                    )}
+                    <span>
+                      {optimizationLoading ? 'Analyzing...' : 'Run AI Optimization Analysis'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Survey Stats */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center space-x-2 mb-2">
                     <Brain className="w-5 h-5 text-blue-600" />
@@ -297,7 +364,64 @@ const AIAssistant = ({ survey, onAddQuestion, onClose }) => {
                   </div>
                 </div>
 
+                {/* AI Optimization Results */}
+                {optimizationResults && (
+                  <div className="space-y-4 mb-6">
+                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="font-medium text-green-900">AI Optimization Results</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{optimizationResults.score.current}%</div>
+                          <div className="text-sm text-green-700">Current Score</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{optimizationResults.score.potential}%</div>
+                          <div className="text-sm text-blue-700">Potential Score</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">+{optimizationResults.score.improvement}%</div>
+                          <div className="text-sm text-purple-700">Improvement</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {optimizationResults.recommendations.map((rec, index) => (
+                          <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                    rec.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                    rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-green-100 text-green-800'
+                                  }`}>
+                                    {rec.priority.toUpperCase()}
+                                  </span>
+                                  <span className="text-xs font-medium text-gray-500">
+                                    {rec.type.replace('_', ' ').toUpperCase()}
+                                  </span>
+                                </div>
+                                <h4 className="font-medium text-gray-900 mb-1">{rec.title}</h4>
+                                <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
+                                <div className="text-sm text-gray-500">
+                                  <strong>Impact:</strong> {rec.impact}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Traditional Improvement Suggestions */}
                 <div className="space-y-4">
+                  <h4 className="text-md font-semibold text-gray-900">Traditional Suggestions</h4>
                   {improvementSuggestions.map((suggestion, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between">

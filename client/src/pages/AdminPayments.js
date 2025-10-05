@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {useAuth} from '../contexts/AuthContext';
 import {useNavigate} from 'react-router-dom';
-import axios from 'axios';
+import {supabase} from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { useDashboardNavigation } from '../utils/navigationUtils';
 import {
   CreditCard,
   CheckCircle,
@@ -14,11 +15,13 @@ import {
   Search,
   Filter,
   Eye,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 const AdminPayments = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { navigateToDashboard, isSignedIn } = useDashboardNavigation();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,16 +38,26 @@ const AdminPayments = () => {
   }, [user, navigate, currentPage, filters]);
   const fetchPayments = async () => {
     try {
-      const params = new URLSearchParams({
-        page: currentPage,
-        limit: 20,
-        ...filters
-      });
-      const response = await axios.get(`/api/admin/payments?${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setPayments(response.data.payments);
-      setTotalPages(response.data.pagination.pages);
+      // Fetch real payment transactions from database
+      let query = supabase
+        .from('payment_transactions')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((currentPage - 1) * 20, currentPage * 20 - 1);
+
+      // Apply filters
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+
+      const { data: paymentsData, error: paymentsError, count } = await query;
+
+      if (paymentsError) {
+        throw paymentsError;
+      }
+
+      setPayments(paymentsData || []);
+      setTotalPages(Math.ceil((count || 0) / 20));
     } catch (error) {
       console.error('Error fetching payments:', error);
       toast.error('Failed to load payments');
@@ -54,12 +67,24 @@ const AdminPayments = () => {
   };
   const handleApproval = async (paymentId, action, notes = '') => {
     try {
-      await axios.post(`/api/admin/payments/${paymentId}/approve`, {
-        action,
-        notes
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      // Update payment status in database
+      const { error: updateError } = await supabase
+        .from('payment_transactions')
+        .update({
+          status: action === 'approve' ? 'completed' : 'failed',
+          metadata: {
+            admin_action: action,
+            admin_notes: notes,
+            processed_at: new Date().toISOString()
+          },
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', paymentId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
       toast.success(`Payment ${action}d successfully`);
       fetchPayments();
     } catch (error) {
@@ -73,13 +98,17 @@ const AdminPayments = () => {
         color: 'bg-yellow-100 text-yellow-800',
         icon: <Clock className="w-3 h-3" />
       },
-      approved: {
+      completed: {
         color: 'bg-green-100 text-green-800',
         icon: <CheckCircle className="w-3 h-3" />
       },
-      rejected: {
+      failed: {
         color: 'bg-red-100 text-red-800',
         icon: <XCircle className="w-3 h-3" />
+      },
+      refunded: {
+        color: 'bg-gray-100 text-gray-800',
+        icon: <RefreshCw className="w-3 h-3" />
       }
     };
     const config = statusConfig[status] || statusConfig.pending;
@@ -116,10 +145,10 @@ const AdminPayments = () => {
               <p className="text-gray-600 mt-2">Review and approve payment transactions</p>
             </div>
             <button
-              onClick={() => navigate('/app/admin')}
+              onClick={navigateToDashboard}
               className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
             >
-              ← Back to Admin
+              ← Back to {isSignedIn ? 'Dashboard' : 'Home'}
             </button>
           </div>
         </div>

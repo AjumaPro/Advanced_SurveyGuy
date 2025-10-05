@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Report Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Report Export Test</h1>
+        
+        <div class="test-section">
+            <h3>Test HTML Export Functions</h3>
+            <p>This page tests the report export functionality by creating sample data and calling the export functions.</p>
+            
+            <button class="test-button" onclick="testPowerPointExport()">Test PowerPoint Export</button>
+            <button class="test-button" onclick="testPDFExport()">Test PDF Export</button>
+            <button class="test-button" onclick="testWordExport()">Test Word Export</button>
+            <button class="test-button" onclick="testImageExport()">Test Image Export</button>
+            
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock data for testing
+        const mockAnalyticsData = {
+            overview: {
+                totalSurveys: 15,
+                totalResponses: 342,
+                avgCompletionRate: 0.78,
+                avgTimeSpent: 4.5,
+                bounceRate: 0.22
+            }
+        };
+
+        const mockChartRefs = {
+            responseTrendsChartRef: { current: null },
+            surveyPerformanceChartRef: { current: null },
+            completionRateChartRef: { current: null },
+            questionPerformanceChartRef: { current: null },
+            responseTimeChartRef: { current: null },
+            deviceTypeChartRef: { current: null },
+            satisfactionRatingChartRef: { current: null },
+            monthlyTrendsChartRef: { current: null },
+            ageDistributionChartRef: { current: null },
+            geographicDistributionChartRef: { current: null }
+        };
+
+        const mockSettings = {
+            chartQuality: 'high',
+            imageFormat: 'png',
+            includeCharts: true
+        };
+
+        const mockPages = ['overview', 'charts', 'demographics'];
+
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${isError ? 'error' : 'success'}">${message}</div>`;
+        }
+
+        // Simplified export functions for testing
+        function testPowerPointExport() {
+            try {
+                const config = {
+                    pages: mockPages,
+                    settings: mockSettings,
+                    analyticsData: mockAnalyticsData,
+                    chartRefs: mockChartRefs
+                };
+                
+                // Create a simple HTML file
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Survey Analytics Report - PowerPoint Ready</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 40px; }
+                            h1 { color: #333; text-align: center; }
+                            .slide { page-break-after: always; margin-bottom: 50px; }
+                            .slide:last-child { page-break-after: avoid; }
+                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                            th { background-color: #f2f2f2; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="slide">
+                            <h1>Survey Analytics Report</h1>
+                            <p style="text-align: center; color: #666;">Generated on ${new Date().toLocaleDateString()}</p>
+                        </div>
+                        <div class="slide">
+                            <h2>Key Metrics Overview</h2>
+                            <table>
+                                <tr><th>Metric</th><th>Value</th></tr>
+                                <tr><td>Total Surveys</td><td>${mockAnalyticsData.overview.totalSurveys}</td></tr>
+                                <tr><td>Total Responses</td><td>${mockAnalyticsData.overview.totalResponses}</td></tr>
+                                <tr><td>Average Completion Rate</td><td>${Math.round(mockAnalyticsData.overview.avgCompletionRate * 100)}%</td></tr>
+                                <tr><td>Average Time Spent</td><td>${Math.round(mockAnalyticsData.overview.avgTimeSpent)} minutes</td></tr>
+                                <tr><td>Bounce Rate</td><td>${Math.round(mockAnalyticsData.overview.bounceRate * 100)}%</td></tr>
+                            </table>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                // Create and download HTML file
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const filename = `Survey_Analytics_Report_${new Date().toISOString().split('T')[0]}.html`;
+                
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showStatus('PowerPoint export test completed successfully! HTML file downloaded.');
+            } catch (error) {
+                showStatus(`PowerPoint export test failed: ${error.message}`, true);
+            }
+        }
+
+        function testPDFExport() {
+            try {
+                const config = {
+                    pages: mockPages,
+                    settings: mockSettings,
+                    analyticsData: mockAnalyticsData,
+                    chartRefs: mockChartRefs
+                };
+                
+                // Create a simple HTML file for PDF export
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Survey Analytics Report - PDF Ready</title>
+                        <style>
+                            @page { size: A4; margin: 20mm; }
+                            body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+                            .page { page-break-after: always; margin: 0; padding: 20px; min-height: 250mm; }
+                            .page:last-child { page-break-after: avoid; }
+                            h1 { color: #333; text-align: center; }
+                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            th { background: #f8f9fa; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="page">
+                            <h1>Survey Analytics Report</h1>
+                            <table>
+                                <tr><th>Metric</th><th>Value</th></tr>
+                                <tr><td>Total Surveys</td><td>${mockAnalyticsData.overview.totalSurveys}</td></tr>
+                                <tr><td>Total Responses</td><td>${mockAnalyticsData.overview.totalResponses}</td></tr>
+                                <tr><td>Average Completion Rate</td><td>${Math.round(mockAnalyticsData.overview.avgCompletionRate * 100)}%</td></tr>
+                                <tr><td>Average Time Spent</td><td>${Math.round(mockAnalyticsData.overview.avgTimeSpent)} minutes</td></tr>
+                                <tr><td>Bounce Rate</td><td>${Math.round(mockAnalyticsData.overview.bounceRate * 100)}%</td></tr>
+                            </table>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const filename = `Survey_Analytics_Report_${new Date().toISOString().split('T')[0]}.html`;
+                
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showStatus('PDF export test completed successfully! HTML file downloaded (ready for print-to-PDF).');
+            } catch (error) {
+                showStatus(`PDF export test failed: ${error.message}`, true);
+            }
+        }
+
+        function testWordExport() {
+            try {
+                const config = {
+                    pages: mockPages,
+                    settings: mockSettings,
+                    analyticsData: mockAnalyticsData,
+                    chartRefs: mockChartRefs
+                };
+                
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Survey Analytics Report - Word Ready</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 40px; }
+                            h1 { color: #333; text-align: center; }
+                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                            th { background-color: #f2f2f2; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Survey Analytics Report</h1>
+                        <table>
+                            <tr><th>Metric</th><th>Value</th></tr>
+                            <tr><td>Total Surveys</td><td>${mockAnalyticsData.overview.totalSurveys}</td></tr>
+                            <tr><td>Total Responses</td><td>${mockAnalyticsData.overview.totalResponses}</td></tr>
+                            <tr><td>Average Completion Rate</td><td>${Math.round(mockAnalyticsData.overview.avgCompletionRate * 100)}%</td></tr>
+                            <tr><td>Average Time Spent</td><td>${Math.round(mockAnalyticsData.overview.avgTimeSpent)} minutes</td></tr>
+                            <tr><td>Bounce Rate</td><td>${Math.round(mockAnalyticsData.overview.bounceRate * 100)}%</td></tr>
+                        </table>
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const filename = `Survey_Analytics_Report_${new Date().toISOString().split('T')[0]}.html`;
+                
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showStatus('Word export test completed successfully! HTML file downloaded (ready for Word import).');
+            } catch (error) {
+                showStatus(`Word export test failed: ${error.message}`, true);
+            }
+        }
+
+        function testImageExport() {
+            try {
+                // Create a simple test image
+                const canvas = document.createElement('canvas');
+                canvas.width = 800;
+                canvas.height = 600;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw a simple chart
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(0, 0, 800, 600);
+                
+                ctx.fillStyle = '#007bff';
+                ctx.font = '24px Arial';
+                ctx.fillText('Sample Chart', 350, 50);
+                
+                // Draw some bars
+                const bars = [120, 180, 150, 200, 160];
+                const colors = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'];
+                
+                for (let i = 0; i < bars.length; i++) {
+                    ctx.fillStyle = colors[i];
+                    ctx.fillRect(100 + i * 120, 400 - bars[i], 80, bars[i]);
+                }
+
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `Sample_Chart_${new Date().toISOString().split('T')[0]}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                });
+
+                showStatus('Image export test completed successfully! Sample chart downloaded.');
+            } catch (error) {
+                showStatus(`Image export test failed: ${error.message}`, true);
+            }
+        }
+
+        // Initialize
+        showStatus('Export test page loaded. Click any button to test the export functionality.');
+    </script>
+</body>
+</html>

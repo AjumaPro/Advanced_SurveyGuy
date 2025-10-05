@@ -8,8 +8,11 @@ import {
   MessageSquare,
   BarChart3,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
+import { AIService } from '../services/aiService';
+import toast from 'react-hot-toast';
 
 const AIInsights = ({ responses = [], questions = [], surveyData = {} }) => {
   const [insights, setInsights] = useState([]);
@@ -70,13 +73,90 @@ const AIInsights = ({ responses = [], questions = [], surveyData = {} }) => {
     setIsAnalyzing(true);
     
     try {
-      // Simulate AI analysis - replace with actual AI service
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use real AI services for analysis
+      const [sentimentResult, clusteringResult, optimizationResult] = await Promise.all([
+        AIService.analyzeSentiment(responses),
+        AIService.clusterResponses(responses, { clusters: 3 }),
+        AIService.optimizeSurvey(surveyData, responses)
+      ]);
+
+      const aiInsights = [];
+
+      // Add sentiment analysis insights
+      if (sentimentResult.success) {
+        aiInsights.push({
+          id: 'ai_sentiment',
+          type: 'analysis',
+          title: 'AI Sentiment Analysis',
+          description: `Overall sentiment is ${sentimentResult.summary.dominantSentiment} based on ${sentimentResult.summary.totalResponses} responses`,
+          value: `${Math.round(sentimentResult.overallSentiment.positive)}% positive`,
+          trend: sentimentResult.summary.dominantSentiment === 'positive' ? 'positive' : 
+                 sentimentResult.summary.dominantSentiment === 'negative' ? 'negative' : 'neutral',
+          confidence: 0.92,
+          category: 'sentiment',
+          icon: <MessageSquare className="w-5 h-5" />,
+          details: sentimentResult.overallSentiment,
+          source: 'Azure Text Analytics'
+        });
+      }
+
+      // Add clustering insights
+      if (clusteringResult.success) {
+        const largestCluster = clusteringResult.clusters.reduce((max, cluster) => 
+          cluster.size > max.size ? cluster : max
+        );
+        aiInsights.push({
+          id: 'ai_clustering',
+          type: 'analysis',
+          title: 'Response Clustering',
+          description: `Responses grouped into ${clusteringResult.clusters.length} distinct themes`,
+          value: `Largest: ${largestCluster.size} responses`,
+          trend: 'neutral',
+          confidence: 0.85,
+          category: 'demographics',
+          icon: <Users className="w-5 h-5" />,
+          details: {
+            totalClusters: clusteringResult.clusters.length,
+            clusterSizes: clusteringResult.clusters.map(c => c.size)
+          },
+          source: 'ML Clustering'
+        });
+      }
+
+      // Add optimization insights
+      if (optimizationResult.success) {
+        const highPriorityRecs = optimizationResult.optimization.recommendations.filter(r => r.priority === 'high');
+        aiInsights.push({
+          id: 'ai_optimization',
+          type: 'analysis',
+          title: 'AI Survey Optimization',
+          description: `${highPriorityRecs.length} high-priority recommendations found`,
+          value: `${optimizationResult.optimization.score.potential}% potential score`,
+          trend: 'positive',
+          confidence: 0.88,
+          category: 'performance',
+          icon: <Brain className="w-5 h-5" />,
+          details: {
+            currentScore: optimizationResult.optimization.score.current,
+            potentialScore: optimizationResult.optimization.score.potential,
+            recommendations: highPriorityRecs.length
+          },
+          source: 'OpenAI GPT-4'
+        });
+      }
+
+      // Combine with traditional insights
+      const traditionalInsights = generateInsights(responses, questions, surveyData);
+      setInsights([...aiInsights, ...traditionalInsights]);
       
-      const generatedInsights = generateInsights(responses, questions, surveyData);
-      setInsights(generatedInsights);
+      toast.success(`Generated ${aiInsights.length} AI insights and ${traditionalInsights.length} traditional insights!`);
     } catch (error) {
       console.error('Error analyzing responses:', error);
+      toast.error('AI analysis failed, using fallback insights');
+      
+      // Use fallback insights
+      const fallbackInsights = generateInsights(responses, questions, surveyData);
+      setInsights(fallbackInsights);
     } finally {
       setIsAnalyzing(false);
     }

@@ -14,10 +14,15 @@ import {
 import EmojiScale from '../components/EmojiScale';
 import SubscriptionForm from '../components/SubscriptionForm';
 import MatrixQuestion from '../components/MatrixQuestion';
+import SurveyProgressIndicator from '../components/SurveyProgressIndicator';
+import EnhancedQuestionRenderer from '../components/EnhancedQuestionRenderer';
 import { testDatabaseConnection, testSurveyAccess } from '../utils/testDatabase';
+import { validateSurvey, sanitizeResponses, getValidationSummary } from '../utils/surveyValidation';
+import { useDashboardNavigation } from '../utils/navigationUtils';
 
 const SurveyResponse = () => {
   const { id } = useParams();
+  const { navigateToDashboard, isSignedIn } = useDashboardNavigation();
   const [survey, setSurvey] = useState(null);
   const [responses, setResponses] = useState({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -27,6 +32,7 @@ const SurveyResponse = () => {
   const [sessionId] = useState(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [validationErrors, setValidationErrors] = useState({});
   const [startTime] = useState(new Date());
+  const [validationSummary, setValidationSummary] = useState({});
 
   const fetchSurvey = React.useCallback(async () => {
     try {
@@ -93,10 +99,20 @@ const SurveyResponse = () => {
   }, [fetchSurvey]);
 
   const handleResponse = (questionId, answer) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: answer
-    }));
+    setResponses(prev => {
+      const newResponses = {
+        ...prev,
+        [questionId]: answer
+      };
+      
+      // Update validation summary
+      if (survey) {
+        const summary = getValidationSummary(survey, newResponses);
+        setValidationSummary(summary);
+      }
+      
+      return newResponses;
+    });
     
     // Clear validation error for this question
     if (validationErrors[questionId]) {
@@ -130,11 +146,12 @@ const SurveyResponse = () => {
       console.log('Responses:', responses);
       
       // Validate responses before submission
-      const validation = api.responses.validateResponse(survey, responses);
+      const validation = validateSurvey(survey, responses);
       
       if (!validation.isValid) {
         setValidationErrors(validation.errors);
-        toast.error('Please complete all required questions');
+        const errorCount = Object.keys(validation.errors).length;
+        toast.error(`Please complete all required questions (${errorCount} error${errorCount > 1 ? 's' : ''})`);
         setSubmitting(false);
         return;
       }
@@ -144,14 +161,17 @@ const SurveyResponse = () => {
       
       console.log('📝 Validation passed, attempting submission...');
       
-      // EMERGENCY BYPASS: Try direct Supabase insertion first
-      try {
-        console.log('🛠️ Trying emergency direct submission...');
+        // Sanitize responses before submission
+        const sanitizedResponses = sanitizeResponses(responses);
+        
+        // EMERGENCY BYPASS: Try direct Supabase insertion first
+        try {
+          console.log('🛠️ Trying emergency direct submission...');
         const { supabase } = await import('../lib/supabase');
         
         const directSubmission = {
           survey_id: id,
-          responses: responses,
+          responses: sanitizedResponses,
           session_id: sessionId,
           submitted_at: new Date().toISOString(),
           completion_time: completionTime,

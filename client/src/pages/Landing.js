@@ -151,6 +151,19 @@ const Landing = () => {
               <button
                 onClick={() => {
                   try {
+                    navigate('/blog');
+                  } catch (error) {
+                    console.error('Navigation error:', error);
+                    window.location.href = '/blog';
+                  }
+                }}
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Research & Blog
+              </button>
+              <button
+                onClick={() => {
+                  try {
                     navigate('/register');
                   } catch (error) {
                     console.error('Navigation error:', error);

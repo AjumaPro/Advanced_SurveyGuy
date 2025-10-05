@@ -284,7 +284,7 @@ const ProfessionalLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Impersonation Banner */}
       {isImpersonating && (
         <div className="fixed top-0 left-0 right-0 bg-gradient-to-r from-red-600 to-pink-600 text-white p-2 z-50 shadow-lg">
@@ -507,7 +507,7 @@ const ProfessionalLayout = () => {
         </header>
 
         {/* Main content area */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1">
           <div className="p-6">
             <Outlet />
           </div>

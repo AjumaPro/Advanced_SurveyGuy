@@ -9,8 +9,11 @@ import {
   Target,
   MessageSquare,
   Star,
-  Settings
+  Settings,
+  AlertCircle
 } from 'lucide-react';
+import { AIService } from '../services/aiService';
+import toast from 'react-hot-toast';
 
 const AIQuestionGenerator = ({ onQuestionsGenerated, currentSurvey = null }) => {
   const [prompt, setPrompt] = useState('');
@@ -107,14 +110,33 @@ const AIQuestionGenerator = ({ onQuestionsGenerated, currentSurvey = null }) => 
     setIsGenerating(true);
     
     try {
-      // Simulate AI API call - replace with actual OpenAI integration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const questions = generateAISuggestions(prompt, surveyContext, targetAudience, surveyGoal, industry, questionCount, complexity, language);
-      setGeneratedQuestions(questions);
-      setSelectedQuestions(questions.map(q => q.id)); // Select all by default
+      // Use real AI service
+      const result = await AIService.generateQuestions(prompt, {
+        surveyType: surveyContext,
+        targetAudience: targetAudience,
+        questionCount: questionCount,
+        complexity: complexity,
+        industry: industry
+      });
+
+      if (result.success) {
+        setGeneratedQuestions(result.questions);
+        setSelectedQuestions(result.questions.map(q => q.id)); // Select all by default
+        toast.success(`Generated ${result.questions.length} questions with AI!`);
+      } else {
+        // Use fallback questions
+        setGeneratedQuestions(result.fallback || []);
+        setSelectedQuestions((result.fallback || []).map(q => q.id));
+        toast.warning('Using fallback questions - AI service unavailable');
+      }
     } catch (error) {
       console.error('Error generating questions:', error);
+      toast.error('Failed to generate questions');
+      
+      // Use template-based fallback
+      const fallbackQuestions = generateAISuggestions(prompt, surveyContext, targetAudience, surveyGoal, industry, questionCount, complexity, language);
+      setGeneratedQuestions(fallbackQuestions);
+      setSelectedQuestions(fallbackQuestions.map(q => q.id));
     } finally {
       setIsGenerating(false);
     }

@@ -588,8 +588,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION create_team_invitation(
   p_team_id UUID,
   p_email TEXT,
-  p_role TEXT DEFAULT 'member',
-  p_invited_by UUID
+  p_invited_by UUID,
+  p_role TEXT DEFAULT 'member'
 )
 RETURNS UUID AS $$
 DECLARE

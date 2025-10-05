@@ -49,30 +49,45 @@ const SubscriptionManager = ({ currentPlan, onPlanChange }) => {
         setBillingHistory(history || []);
       }
 
-      // Mock subscription details (would come from payment processor)
-      setSubscriptionDetails({
-        id: 'sub_' + Math.random().toString(36).substr(2, 9),
-        status: 'active',
-        current_period_start: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-        current_period_end: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-        cancel_at_period_end: false,
-        created: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-      });
+      // Fetch real subscription details from database
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('subscription_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-      // Mock payment methods
-      setPaymentMethods([
-        {
-          id: 'pm_1',
-          type: 'card',
-          card: {
-            brand: 'visa',
-            last4: '4242',
-            exp_month: 12,
-            exp_year: 2025
-          },
-          is_default: true
-        }
-      ]);
+      if (!subscriptionError && subscriptionData) {
+        setSubscriptionDetails({
+          id: subscriptionData.id,
+          status: subscriptionData.status,
+          current_period_start: subscriptionData.starts_at,
+          current_period_end: subscriptionData.ends_at,
+          cancel_at_period_end: subscriptionData.cancel_at_period_end || false,
+          created: subscriptionData.created_at,
+          plan: subscriptionData.plan_type,
+          amount: subscriptionData.amount
+        });
+      } else {
+        console.log('⚠️ No active subscription found');
+        setSubscriptionDetails(null);
+      }
+
+      // Fetch real payment methods from database
+      const { data: paymentMethodsData, error: paymentMethodsError } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!paymentMethodsError && paymentMethodsData) {
+        setPaymentMethods(paymentMethodsData);
+      } else {
+        console.log('⚠️ No payment methods found');
+        setPaymentMethods([]);
+      }
 
     } catch (error) {
       console.error('Error fetching subscription data:', error);
